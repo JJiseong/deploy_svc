@@ -291,10 +291,23 @@ Do not store real values in the repository, memory files, or conversation logs.
 
 - The project was scaffolded at `C:\Harness\Projects\deploy_svc`.
 - The original handoff named `coolify_poc`; `deploy_svc` is now authoritative.
+- The private GitHub repository is `JJiseong/deploy_svc`.
+- Pull request `#1` published and merged the initial governed project baseline.
+- The local `main` branch is synchronized with `origin/main`.
 - No application implementation exists.
 - No design document or project ADR exists.
 - No real environment values are stored in the repository.
 - The user approved the architecture phase.
+
+## Repository Publication Result
+
+- Gitleaks found no secret leaks.
+- `bun audit` found no dependency vulnerabilities.
+- `bun scripts/audit.ts` passed.
+- README translation hashes are synchronized.
+- The working tree was clean after pull request `#1` merged.
+
+The project can now continue from another computer or AI account without relying on the original chat history.
 
 ## Next Session
 
@@ -326,3 +339,9 @@ bun scripts/audit.ts
 ```
 
 Authenticate GitHub separately on each computer. Create a separate SSH key for each computer when SSH access is required.
+
+## Continuation Prompt
+
+Use this prompt in a new session:
+
+> Read `memory/2026-09-22-coolify-portal-prototype-handoff.md` and continue from the design phase. Use the owner's personal GitHub account and personal AWS EC2 infrastructure.

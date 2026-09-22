@@ -1,6 +1,6 @@
 # VERSION_MANIFEST.md
 
-**Generated**: 2026-09-22T06:58:25.139Z
+**Generated**: 2026-09-22T07:06:45.229Z
 **Manifest Version**: 1.0
 **Location**: docs/VERSION_MANIFEST.md
 
@@ -19,15 +19,15 @@
 
 | Name | File | Tier | Model | Last Modified |
 |------|------|------|-------|---------------|
-| architect | agents/architect.md | high | inherit | N/A |
-| code-writer | agents/code-writer.md | low | inherit | N/A |
-| designer | agents/designer.md | medium | inherit | N/A |
-| i18n-specialist | agents/i18n-specialist.md | medium | inherit | N/A |
-| pm | agents/pm.md | medium | inherit | N/A |
-| README_ko | agents/README_ko.md | N/A | N/A | N/A |
-| security-monitor | agents/security-monitor.md | medium | inherit | N/A |
-| stack-setup | agents/stack-setup.md | low | inherit | N/A |
-| test-runner | agents/test-runner.md | medium | inherit | N/A |
+| architect | agents/architect.md | high | inherit | 2026-09-22 |
+| code-writer | agents/code-writer.md | low | inherit | 2026-09-22 |
+| designer | agents/designer.md | medium | inherit | 2026-09-22 |
+| i18n-specialist | agents/i18n-specialist.md | medium | inherit | 2026-09-22 |
+| pm | agents/pm.md | medium | inherit | 2026-09-22 |
+| README_ko | agents/README_ko.md | N/A | N/A | 2026-09-22 |
+| security-monitor | agents/security-monitor.md | medium | inherit | 2026-09-22 |
+| stack-setup | agents/stack-setup.md | low | inherit | 2026-09-22 |
+| test-runner | agents/test-runner.md | medium | inherit | 2026-09-22 |
 
 ---
 
