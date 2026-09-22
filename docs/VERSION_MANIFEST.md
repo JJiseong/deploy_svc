@@ -1,0 +1,221 @@
+# VERSION_MANIFEST.md
+
+**Generated**: 2026-09-22T06:58:25.139Z
+**Manifest Version**: 1.0
+**Location**: docs/VERSION_MANIFEST.md
+
+---
+
+## Summary
+
+- **Agents**: 9
+- **Skills**: 50
+- **Scripts**: 90 *(top-level CLI scripts; library/helper modules under `scripts/lib/`, `scripts/helpers/`, `scripts/hooks/`, and `scripts/validators/` plus experiment files under `scripts/experiments/` are excluded here — `scripts/SCRIPTS.md` is the full registry)*
+- **Commands**: 9
+
+---
+
+## Agents
+
+| Name | File | Tier | Model | Last Modified |
+|------|------|------|-------|---------------|
+| architect | agents/architect.md | high | inherit | N/A |
+| code-writer | agents/code-writer.md | low | inherit | N/A |
+| designer | agents/designer.md | medium | inherit | N/A |
+| i18n-specialist | agents/i18n-specialist.md | medium | inherit | N/A |
+| pm | agents/pm.md | medium | inherit | N/A |
+| README_ko | agents/README_ko.md | N/A | N/A | N/A |
+| security-monitor | agents/security-monitor.md | medium | inherit | N/A |
+| stack-setup | agents/stack-setup.md | low | inherit | N/A |
+| test-runner | agents/test-runner.md | medium | inherit | N/A |
+
+---
+
+<!-- validate-md-language:allowlist-begin reason="Triggers column embeds verbatim Korean search keywords copied from k-* SKILL.md frontmatter (proper-noun data values, not prose). Generated region — a whole-file lang: ko exception would be dishonest and would un-validate the rest of the manifest, so scripts/validate-md-language.ts exempts only this marked section (T-20260912-015)." -->
+## Skills
+
+| Name | Version | Status | Location | Platform | Triggers | Owner |
+|------|---------|--------|----------|----------|----------|-------|
+| accessibility-audit | 1.1.0 | active | skills/accessibility-audit/SKILL.md | workspace | accessibility-audit, /accessibility-audit, axe-core audit, wcag accessibility check, wcag 2.1 aa | pm |
+| agent-lifecycle-manager | 1.3.0 | active | skills/agent-lifecycle-manager/SKILL.md | workspace | create agent, new agent, validate agents, agent lifecycle, manage agents, hire agent, fire agent, deprecate agent | pm |
+| api-documentation | 1.0.2 | active | skills/api-documentation/SKILL.md | workspace | api documentation, document api, api reference, developer documentation, rest api docs, graphql docs, sdk documentation | pm |
+| ci-triage | 0.1.1 | active | skills/ci-triage/SKILL.md | workspace | ci failure, triage failure, audit gate failed, scaffold failed, fix the pipeline | pm |
+| code-review | 1.0.0 | active | skills/code-review/SKILL.md | workspace | code review, review pr, evaluate code, check code quality, pull request review, code inspection | pm |
+| context-commonization-review | 1.1.0 | active | .claude/skills/context-commonization-review/SKILL.md | both | context commonization review, variant context duplication, commonization review, context.md duplication review, context.md commonization | architect |
+| create-variant | 1.4.1 | active | .claude/skills/create-variant/SKILL.md | both | create variant, new variant, create variant, variant creation, scaffold new variant, new co- project | pm |
+| decision-record | 1.1.0 | active | skills/decision-record/SKILL.md | workspace | decision record, gate ruling, go/no-go decision, escalation decision, record a decision | pm |
+| design-foundation | 1.0.0 | active | .claude/skills/design-foundation/SKILL.md | both | design foundation, design principles, design guide, design tokens setup, design decision record | architect |
+| documentation-writing | 1.0.3 | active | skills/documentation-writing/SKILL.md | workspace | write documentation, create guide, draft communication, write manual, create tutorial, documentation, technical writing | pm |
+| evidence-ledger | 1.1.0 | active | skills/evidence-ledger/SKILL.md | workspace | evidence ledger, citation ledger, claim verification, source verification, evidence tracking | pm |
+| explain-me | 1.0.0 | experimental | skills/explain-me/SKILL.md | workspace | /explain-me, /reportme, make a report, create report, explain this topic | pm |
+| finishing-a-development-branch | 1.0.1 | active | skills/finishing-a-development-branch/SKILL.md | workspace | finish branch, complete work, wrap up, finishing a development branch, merge branch, create PR, push and PR | pm |
+| gateguard | 1.0.2 | active | skills/gateguard/SKILL.md | workspace | gateguard, /gateguard, investigate file, check before edit, pre-edit check | pm |
+| graft | N/A | active | .claude/skills/graft/SKILL.md | claude | N/A | N/A |
+| handbook | 0.6.0 | active | skills/handbook/SKILL.md | workspace | make handbook, create handbook, build course site, companion handbook, update handbook, handbook sync, handbook maintenance | pm |
+| handbook-sync-audit | 1.0.4 | active | skills/handbook-sync-audit/SKILL.md | workspace | audit handbook, handbook parity check, handbook sync audit, textbook drift check | handbook-reviewer |
+| i18n-audit | 1.0.0 | active | skills/i18n-audit/SKILL.md | workspace | i18n audit, locale parity, translation parity, glossary audit, L10N parity | pm |
+| i18n-formatting | 1.0.0 | active | skills/i18n-formatting/SKILL.md | workspace | date format, number format, currency format, unit conversion, paper size, korean numerals | pm |
+| i18n-layout | 1.0.0 | active | skills/i18n-layout/SKILL.md | workspace | character encoding, RTL, bidi, font selection, CRLF, BOM | pm |
+| i18n-locale-config | 1.0.0 | active | skills/i18n-locale-config/SKILL.md | workspace | locale config, locale code, BCP 47, collation, collation order, timezone | pm |
+| meeting-facilitation | 1.4.3 | active | skills/meeting-facilitation/SKILL.md | workspace | meeting, agent discussion, collaborative decision, multi-agent coordination, facilitate meeting | pm |
+| platform-command-lifecycle-manager | 1.0.2 | active | skills/platform-command-lifecycle-manager/SKILL.md | workspace | create platform command, new .claude command, new .gemini command, platform command lifecycle, command parity, propagate command | pm |
+| platform-skill-lifecycle-manager | 1.0.2 | active | skills/platform-skill-lifecycle-manager/SKILL.md | workspace | create platform skill, new .claude skill, new .gemini skill, platform skill version, platform skill lifecycle, update platform skill | pm |
+| project-resync | 1.4.0 | active | .claude/skills/project-resync/SKILL.md | both | project-resync, resync projects, sync project cycle | pm |
+| project-review | 1.3.0 | active | skills/project-review/SKILL.md | workspace | project review, review project, audit project, quality review | pm |
+| project-to-variant | 1.3.0 | active | .claude/skills/project-to-variant/SKILL.md | both | convert project to variant, create variant from project, project to template, promote project to variant | scaffolding-expert |
+| promote-variant | 1.4.0 | active | .claude/skills/promote-variant/SKILL.md | both | promote variant, Phase B, variant promotion, promote to template, create template from prototype | pm |
+| refactoring | 1.0.0 | active | skills/refactoring/SKILL.md | workspace | refactor, clean up code, improve code, reduce duplication, pay down tech debt, code smell, improve design | pm |
+| release-template | 1.0.0 | active | .claude/skills/release-template/SKILL.md | both | release template, template release, bump templates version, tag template, publish template version | pm |
+| research-analysis | 1.0.2 | active | skills/research-analysis/SKILL.md | workspace | research, analyze, investigate, synthesize, evidence gathering, data analysis, literature review | pm |
+| script-lifecycle-manager | 1.2.2 | active | skills/script-lifecycle-manager/SKILL.md | workspace | create script, update script, deprecate script, script lifecycle, manage scripts | pm |
+| security-scan | 1.2.0 | active | skills/security-scan/SKILL.md | workspace | security scan, scan for vulnerabilities, security check, run security | pm |
+| simulate-pipeline | 1.0.1 | active | .claude/skills/simulate-pipeline/SKILL.md | both | simulate pipeline, simulate project, test scaffolding, dry run project creation, simulate l3 promotion, test l3 pipeline, dry run variant promotion | automation-engineer |
+| skill-lifecycle-manager | 1.5.0 | active | skills/skill-lifecycle-manager/SKILL.md | workspace | create skill, new skill, validate skills, skill lifecycle, manage skills, skill request, deprecate skill, remove skill | pm |
+| sound-synth | 1.0.0 | active | .claude/skills/sound-synth/SKILL.md | both | sound-synth, /sound-synth, procedural sound generation, 8-bit retro sound effects, jsfxr sound synth | sound-designer |
+| source-command-commit-push-pr | 1.0.3 | active | skills/source-command-commit-push-pr/SKILL.md | workspace | commit-push-pr, commit and push, create PR | pm |
+| standup-synthesizer | 1.0.0 | active | skills/standup-synthesizer/SKILL.md | workspace | standup digest, daily standup, synthesize standup, work summary | pm |
+| swe-solve | 1.1.1 | active | skills/swe-solve/SKILL.md | workspace | swe-solve, solve issue, autonomous issue resolution, issue to pr | pm |
+| sync | 1.6.0 | active | skills/sync/SKILL.md | workspace | sync, /sync, commit and push, create PR | pm |
+| team-builder | 1.1.0 | active | skills/team-builder/SKILL.md | workspace | build new agent team, create agent team, agent team setup, team builder | pm |
+| test-driven-development | 1.0.0 | active | skills/test-driven-development/SKILL.md | workspace | tdd, test driven development, test first, write tests first, red green refactor, test coverage | pm |
+| ticket-run | 1.0.0 | active | .claude/skills/ticket-run/SKILL.md | both | ticket-run, process ticket queue, run next ticket | automation-engineer |
+| token-usage-lint | 1.1.0 | active | skills/token-usage-lint/SKILL.md | workspace | token lint, hardcoded color, design token compliance, raw hex values, hardcoded spacing | pm |
+| translate | 1.0.3 | active | skills/translate/SKILL.md | workspace | translate, translation, Korean translation | pm |
+| ui-ux-design-intelligence | 1.0.1 | active | skills/ui-ux-design-intelligence/SKILL.md | workspace | design system, ui design, ux design, component design, visual design, design tokens, interface design | pm |
+| update-bun-packages | 1.3.1 | active | skills/update-bun-packages/SKILL.md | workspace | update bun packages, upgrade bun packages, bun update, update dependencies, upgrade dependencies | pm |
+| upgrade-project | 1.5.0 | active | .claude/skills/upgrade-project/SKILL.md | both | upgrade project, upgrade template, sync project with template, refresh project, update project infrastructure | pm |
+| variant-feature | 1.0.0 | active | .claude/skills/variant-feature/SKILL.md | both | add feature to variant, extend variant, variant feature, add agent to variant, add skill to variant | scaffolding-expert |
+| zod-contract-gate | 1.0.2 | active | skills/zod-contract-gate/SKILL.md | workspace | zod-contract-gate, /zod-contract-gate, zod contract validation, schema contract gate, runtime schema validation | architect |
+
+<!-- validate-md-language:allowlist-end -->
+
+---
+
+## Scripts
+
+| Name | Version | Location | Dependencies |
+|------|---------|----------|--------------|
+| agent-create.ts | 1.0.1 | scripts/agent-create.ts | N/A |
+| agent-delete.ts | 1.0.1 | scripts/agent-delete.ts | N/A |
+| agent-lifecycle-audit.ts | 1.3.1 | scripts/agent-lifecycle-audit.ts | N/A |
+| agent-list.ts | 1.1.0 | scripts/agent-list.ts | N/A |
+| agent-verify.ts | 1.0.2 | scripts/agent-verify.ts | N/A |
+| analyze-git-history.ts | 1.0.2 | scripts/analyze-git-history.ts | child_process |
+| apply-handbook-theme.test.ts | 1.0.1 | scripts/tests/apply-handbook-theme.test.ts | bun:test |
+| apply-handbook-theme.ts | 1.0.0 | scripts/handbook/apply-handbook-theme.ts | N/A |
+| archive-memory.ts | 1.1.0 | scripts/archive-memory.ts | N/A |
+| audit.ts | 2.39.0 | scripts/audit.ts | bun |
+| bootstrap-stages.ts | 1.0.0 | scripts/bootstrap-stages.ts | fs, js-yaml, path |
+| build-search-index.ts | 1.0.0 | scripts/handbook/build-search-index.ts | N/A |
+| check-a11y.ts | 1.0.0 | scripts/handbook/check-a11y.ts | N/A |
+| check-authoring.ts | 1.2.0 | scripts/handbook/check-authoring.ts | N/A |
+| check-external-links.ts | 1.2.0 | scripts/handbook/check-external-links.ts | N/A |
+| check-i18n-parity.ts | 1.0.0 | scripts/handbook/check-i18n-parity.ts | N/A |
+| check-labels.ts | 1.0.0 | scripts/handbook/check-labels.ts | N/A |
+| check-links.ts | 1.0.0 | scripts/handbook/check-links.ts | N/A |
+| check-lint.ts | 1.0.0 | scripts/handbook/check-lint.ts | N/A |
+| check-search.ts | 2.0.0 | scripts/handbook/check-search.ts | N/A |
+| check-spell.ts | 1.0.0 | scripts/handbook/check-spell.ts | N/A |
+| check-structure.test.ts | 1.0.0 | scripts/tests/check-structure.test.ts | bun:test |
+| check-structure.ts | 1.0.0 | scripts/handbook/check-structure.ts | N/A |
+| check-symmetry.ts | 1.0.0 | scripts/handbook/check-symmetry.ts | N/A |
+| check-tables.ts | 1.0.0 | scripts/handbook/check-tables.ts | N/A |
+| cleanup-completed-md.ts | 1.1.0 | scripts/cleanup-completed-md.ts | N/A |
+| clear-pm-approval.ts | 1.0.0 | scripts/clear-pm-approval.ts | N/A |
+| compile-tokens.ts | 1.2.0 | scripts/compile-tokens.ts | N/A |
+| deploy-handbook.ts | 1.1.0 | scripts/handbook/deploy-handbook.ts | N/A |
+| deploy-readme-patch.test.ts | 1.0.0 | scripts/tests/deploy-readme-patch.test.ts | bun:test |
+| design-lint.ts | 1.0.0 | scripts/design-lint.ts | N/A |
+| dev-sync.ts | 1.16.0 | scripts/dev-sync.ts | bun |
+| dispatch-parallel.ts | 1.1.1 | scripts/dispatch-parallel.ts | N/A |
+| dispatch-serial.ts | 1.1.1 | scripts/dispatch-serial.ts | N/A |
+| dispatch.ts | 1.1.1 | scripts/dispatch.ts | N/A |
+| evidence-backport-scan.ts | 1.0.0 | scripts/evidence-backport-scan.ts | N/A |
+| extract-copycode.ts | 1.0.0 | scripts/handbook/extract-copycode.ts | N/A |
+| gen-pr-body.ts | 1.2.0 | scripts/gen-pr-body.ts | bun |
+| generate-ide-rules.ts | 1.0.0 | scripts/generate-ide-rules.ts | N/A |
+| generate-raci.ts | 1.1.0 | scripts/generate-raci.ts | js-yaml |
+| generate-skill-graph.ts | 1.12.0 | scripts/generate-skill-graph.ts | js-yaml |
+| generate-version-manifest.ts | 1.7.1 | scripts/generate-version-manifest.ts | bun, js-yaml |
+| graph-delta-log.ts | 1.0.0 | scripts/graph-delta-log.ts | N/A |
+| handbook-doctor.ts | 1.0.0 | scripts/handbook/handbook-doctor.ts | N/A |
+| handbook-sync-audit.ts | 1.0.0 | scripts/handbook/handbook-sync-audit.ts | N/A |
+| lifecycle-sync-audit.ts | 1.15.0 | scripts/lifecycle-sync-audit.ts | js-yaml |
+| lint-instructions.ts | 1.0.0 | scripts/lint-instructions.ts | N/A |
+| md-to-ooxml.ts | 1.2.0 | scripts/md-to-ooxml.ts | fs, path |
+| migrate-quality-gates.ts | 1.1.0 | scripts/migrate-quality-gates.ts | fs, js-yaml, path |
+| nav-utils.ts | 1.0.0 | scripts/handbook/nav-utils.ts | N/A |
+| qa-gate.ts | 1.3.0 | scripts/qa-gate.ts | bun |
+| readme-lifecycle-audit.ts | 1.0.4 | scripts/readme-lifecycle-audit.ts | N/A |
+| render-pdf-deck.ts | 1.0.1 | scripts/render-pdf-deck.ts | N/A |
+| resolve-variants.ts | 1.0.3 | scripts/resolve-variants.ts | fs, js-yaml, path |
+| retry-handler.ts | 1.1.0 | scripts/retry-handler.ts | N/A |
+| scaffold-handbook.ts | 1.2.0 | scripts/handbook/scaffold-handbook.ts | N/A |
+| setup-github-branch-protection.ts | 1.0.1 | scripts/setup-github-branch-protection.ts | bun |
+| skill-lifecycle-audit.ts | 1.5.0 | scripts/skill-lifecycle-audit.ts | N/A |
+| skill-session-review.ts | 1.1.0 | scripts/skill-session-review.ts | bun |
+| spec-register.ts | 1.3.0 | scripts/spec-register.ts | N/A |
+| sync-md.ts | 1.4.0 | scripts/sync-md.ts | N/A |
+| sync-skill-status.ts | 1.0.1 | scripts/sync-skill-status.ts | N/A |
+| sync-skills.ts | 1.8.0 | scripts/sync-skills.ts | N/A |
+| team-builder.ts | 1.4.0 | scripts/team-builder.ts | N/A |
+| test-runner.ts | 1.4.0 | scripts/test-runner.ts | fs, os, path |
+| translate-readme.ts | 1.0.0 | scripts/translate-readme.ts | bun, fs, path |
+| typecheck.ts | 1.1.1 | scripts/typecheck.ts | N/A |
+| update-footers.ts | 1.0.0 | scripts/handbook/update-footers.ts | N/A |
+| validate-agents.ts | 1.2.1 | scripts/validate-agents.ts | N/A |
+| validate-decisions.ts | 1.0.0 | scripts/validate-decisions.ts | js-yaml |
+| validate-doc-folder.ts | 1.1.0 | scripts/validate-doc-folder.ts | fs, path |
+| validate-docs-links.ts | 1.1.0 | scripts/validate-docs-links.ts | fs, path |
+| validate-handbook.ts | 1.1.0 | scripts/handbook/validate-handbook.ts | N/A |
+| validate-md-language.ts | 1.11.0 | scripts/validate-md-language.ts | fs |
+| validate-model-registry.ts | 1.4.0 | scripts/validate-model-registry.ts | N/A |
+| validate-nav.ts | 1.0.0 | scripts/handbook/validate-nav.ts | N/A |
+| validate-pm-extends.ts | 0.3.1 | scripts/validate-pm-extends.ts | N/A |
+| validate-procedures.ts | 1.1.0 | scripts/validate-procedures.ts | js-yaml |
+| validate-process.ts | 1.0.0 | scripts/validate-process.ts | js-yaml |
+| validate-raci.ts | 1.2.0 | scripts/validate-raci.ts | js-yaml |
+| validate-skills.ts | 1.5.1 | scripts/validate-skills.ts | N/A |
+| validate-templates.ts | 1.36.0 | scripts/validate-templates.ts | js-yaml |
+| validate-variant-readiness.ts | 1.1.0 | scripts/validate-variant-readiness.ts | N/A |
+| verify-agent-deliverables.ts | 1.0.1 | scripts/verify-agent-deliverables.ts | fs |
+| verify-memory.ts | 1.2.0 | scripts/verify-memory.ts | fs, path |
+| verify-platform-lifecycle.ts | 1.1.3 | scripts/verify-platform-lifecycle.ts | N/A |
+| verify-readme-sync.ts | 1.4.0 | scripts/verify-readme-sync.ts | bun, fs, path |
+| verify-scripts.ts | 1.7.0 | scripts/verify-scripts.ts | fs, path |
+| verify-skill-graph.ts | 1.6.0 | scripts/verify-skill-graph.ts | N/A |
+| verify-skills.ts | 1.3.0 | scripts/verify-skills.ts | N/A |
+
+---
+
+## Commands
+
+| Name | File | Platform | Skill Integration |
+|------|------|----------|-------------------|
+| changelog | .claude/commands/changelog.md | both | N/A |
+| commit-push-pr | .claude/commands/commit-push-pr.md | both | N/A |
+| gateguard | .claude/commands/gateguard.md | both | N/A |
+| meeting | .claude/commands/meeting.md | both | N/A |
+| memlog | .claude/commands/memlog.md | both | N/A |
+| new-task | .claude/commands/new-task.md | both | N/A |
+| project-review | .claude/commands/project-review.md | both | N/A |
+| security-check | .claude/commands/security-check.md | both | N/A |
+| sync | .claude/commands/sync.md | both | N/A |
+
+---
+
+## Platform Parity Status
+
+**Checked**: Claude (.claude/) vs Gemini (.gemini/)
+
+- **Commands with parity**: 9 / 9
+- **Skills with parity**: 12 / 50 (common-template skills are parity-exempt)
+
+---
+
+## Drift Detection
+
+⚠️ **Drift detected**:
+
+- [WARNING] Agent README_ko missing tier or model metadata
+- [WARNING] Command security-check has no matching skill of the same name

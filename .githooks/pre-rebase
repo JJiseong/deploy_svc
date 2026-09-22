@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# pre-rebase hook - Scan commits being rebased for secrets
+# Triggered: Before git rebase operation
+# Blocks: Rebase if secrets detected in any commit being rewritten
+set -euo pipefail
+
+# Gitleaks missing — regex fallback (T-20260912-021): silently skipping the scan
+# (old behavior: exit 0) was inconsistent with scripts/hooks/pre-push.ts, which
+# falls back to a blocking regex scan when gitleaks is not installed. Same
+# working-tree `git grep` pass and the same pattern list; the pattern SSOT lives
+# in scripts/hooks/pre-push.ts (regex fallback branch) — keep the list in sync
+# when editing either file. Limitation (same as pre-push's fallback): the
+# working tree is scanned, not the commits being rebased.
+if ! command -v gitleaks &> /dev/null; then
+    echo "⚠️  gitleaks not found - running regex secret scan fallback (install gitleaks for full coverage)"
+    echo "   Install gitleaks for protection: https://github.com/gitleaks/gitleaks"
+    SECRET_PATTERN='sk-ant-api03-[A-Za-z0-9_-]{93}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-proj-[A-Za-z0-9_-]+'
+    if MATCHES=$(git grep -n -E "$SECRET_PATTERN" -- "*.ts" "*.js" "*.mjs" "*.py" "*.sh" "*.json" "*.md" "*.env" "*.env.*" "*.yml" "*.yaml" "*.toml" "*.cfg" "*.ini" "*.html" 2>/dev/null); then
+        echo "❌ Potential secrets found - rebase blocked. Install gitleaks for full coverage."
+        echo "$MATCHES" | head -n 5
+        exit 1
+    fi
+    echo "✅ Regex secret scan passed (install gitleaks for full coverage)"
+    exit 0
+fi
+
+echo "🔍 Scanning for secrets in commits being rebased..."
+
+# Get the range of commits being rebased
+# $1 = upstream branch, $2 = branch being rebased
+if [ $# -ge 2 ]; then
+    UPSTREAM="$1"
+    REBASE_BRANCH="$2"
+
+    # Scan each commit in the rebase range
+    SECRETS_FOUND=0
+    while IFS= read -r commit; do
+        if git show "$commit" 2>/dev/null | gitleaks detect --no-git --verbose --no-banner 2>/dev/null; then
+            echo "✅ Commit $commit: clean"
+        else
+            echo "❌ SECRET DETECTED in commit $commit"
+            echo "   Rebase blocked to prevent secret exposure"
+            SECRETS_FOUND=1
+        fi
+    done < <(git rev-list --no-merges "$UPSTREAM..$REBASE_BRANCH")
+
+    if [ "$SECRETS_FOUND" -eq 1 ]; then
+        echo "❌ Rebase blocked: secrets detected in history."
+        exit 1
+    fi
+else
+    # Fallback: scan recent commits if no parameters provided
+    echo "⚠️  No rebase parameters - scanning last 10 commits"
+    SECRETS_FOUND=0
+    while IFS= read -r commit; do
+        if git show "$commit" 2>/dev/null | gitleaks detect --no-git --verbose --no-banner 2>/dev/null; then
+            echo "✅ Commit $commit: clean"
+        else
+            echo "❌ SECRET DETECTED in commit $commit"
+            SECRETS_FOUND=1
+        fi
+    done < <(git log -n 10 --format="%H")
+
+    if [ "$SECRETS_FOUND" -eq 1 ]; then
+        echo "❌ Rebase blocked: secrets detected in history."
+        exit 1
+    fi
+fi
+
+echo "✅ No secrets found - rebase can proceed"
+exit 0

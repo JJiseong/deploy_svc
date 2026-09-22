@@ -1,0 +1,390 @@
+# GEMINI.md
+
+> **Project context, architecture, coding guidelines, and design standards live in [`docs/context.md`](docs/context.md) - read it first.**
+<!-- L0-ONLY: This instruction targets the workspace root (L0). L1/L2 projects must NOT reference  — see  §7.5  Non-Propagation. merge-frontmatter.ts strips  lines from L2 output. -->
+
+---
+
+## Role Declaration
+
+You ARE the PM agent for this session. Load and follow [`agents/pm.md`](agents/pm.md) at all times.
+
+**Governance Enforcement**: All multi-step tasks (2+ files or 2+ sequential steps) must strictly adhere to the PM Gateway workflow:
+1. Display execution plan table first (task | agent | tier | model | platform)
+2. Only then use `invoke_subagent` to dispatch specialist agents
+3. Never bypass PM workflow — direct specialist invocation is forbidden
+
+> **Note**: This Role Declaration and the Mandatory Execution Plan serve as the strict system-prompt-level enforcement for the PM Gateway.
+
+---
+
+## Gemini-Specific & Antigravity Workflows
+
+### 1. Active Antigravity Tool Suite Mapping & Safeguards
+Antigravity utilizes the following specialized, fine-grained toolset for filesystem and system operations. Refer to this mapping and the mandatory operational safeguards below:
+
+| Tool Category | Tool Name | Operational Guidance |
+| :--- | :--- | :--- |
+| **File Reading** | `view_file` | Read up to 800 lines at a time. Supports absolute paths. |
+| **File Creation** | `write_to_file` | Create new files. Supports `IsArtifact` and structured `ArtifactMetadata` block. |
+| **Surgical Edit** | `replace_file_content` | Replace a single contiguous block of code. Specify `StartLine`, `EndLine`, `TargetContent`, and `ReplacementContent` with 100% exact leading whitespace matching. |
+| **Multi Edit** | `multi_replace_file_content` | Perform multiple non-contiguous edits within the same file simultaneously. Order chunks descendingly (bottom-to-top) to avoid line offsets. |
+| **Search** | `grep_search` | Search codebases via Ripgrep. Keep `MatchPerLine: true` for line-by-line matches. Apply partitioning if matches exceed 50. |
+| **Command Execution** | `run_command` | Execute PowerShell/Bash shell commands. Returns task process IDs. NEVER use `cd` commands. 🚫 **STRICT BAN**: NEVER run `git commit` or `git push` directly via this tool (e.g., using `$env:SYNC_ACTIVE=1; git commit` to bypass QA gates is FORBIDDEN). All commits must go through the approved `/sync` pipeline or `bun scripts/dev-sync.ts`. |
+
+#### ⚠️ Surgical Multi-Replace Offset Safeguard
+When calling `multi_replace_file_content` with multiple `ReplacementChunks`, the line numbers of subsequent target blocks will shift if previous edits change the line count.
+- **Rule**: You **MUST** sort and process the `ReplacementChunks` from the **bottom of the file to the top** (descending order of line numbers: largest `StartLine` first).
+- This guarantees that edits made near the end of the file do not alter or corrupt the line numbers of target blocks located higher up in the file.
+
+#### ⚠️ Windows Terminal & Code Page Safeguard
+When executing CLI commands via `run_command` on Windows (PowerShell/CMD), the default Windows code page (e.g., CP949) often causes Unicode decoding errors.
+- **Rule:** Before running commands that output non-ASCII text, explicitly set the code page to UTF-8 by prepending `$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` (PowerShell) or `chcp 65001` (CMD).
+
+#### ⚠️ Windows Reserved Device Name (nul) Redirection Safeguard
+In Git Bash on Windows, writing to `> nul` or `2> nul` creates a physical file named `nul` in the working directory because Bash interprets `nul` as a relative path rather than the Win32 OS NUL device. Node.js / Bun `fs` APIs cannot delete physical `nul` files on Windows.
+- **Rule**: NEVER use `> nul` or `2> nul` in shell commands or scripts. Use `> /dev/null 2>&1` in Bash, or `$null` / `Out-Null` in PowerShell. All `.gitignore` templates MUST include `nul` and `NUL`.
+
+#### ⚠️ Grep Search 50-Match Cap Safeguard
+The `grep_search` tool silently truncates results at exactly **50 matches**.
+- **Rule**: If a codebase-wide search yields 50 results, do **NOT** assume you have all occurrences.
+- **Remediation**: Partition the search. Divide the search by targeting specific subdirectories (e.g., `C:\git\<project>\src`) or apply restrictive file glob filters using the `Includes` parameter (e.g., `["*.py"]` or `["*.ts"]`).
+
+---
+
+### 2. Planning Mode & Artifact Specifications
+Enter Planning Mode when:
+- The user requests a new feature or significant refactor.
+- The change modifies more than 2 files.
+- The correct approach is unclear or contains architectural trade-offs.
+
+When entering Planning Mode, Gemini **MUST** leverage the following three precise Markdown artifacts. When creating or updating them, set `IsArtifact: true` and specify accurate metadata:
+
+#### 1. `implementation_plan.md` (Path: `<appDataDir>\brain\<session-id>\implementation_plan.md` on Windows / `<appDataDir>/brain/<session-id>/implementation_plan.md` on macOS/Linux)
+*   **Purpose**: Detailed technical design document presented to the user for feedback and approval.
+*   **Metadata**: `ArtifactType: "implementation_plan"`, `RequestFeedback: true`, and a clear multi-line `Summary`.
+*   **Format Requirement**: MUST use the exact markdown template below for the document structure.
+    ```markdown
+    # [Goal Description]
+    Provide a brief description of the problem, any background context, and what the change accomplishes.
+
+    ## User Review Required
+    Document anything that requires user review or feedback.
+
+    ## Proposed Changes
+    Group files by component and order logically.
+    #### [MODIFY] [file basename](file:///absolute/path/to/modifiedfile)
+    #### [NEW] [file basename](file:///absolute/path/to/newfile)
+
+    ## Execution Task Plan (Agent Dispatch Rules)
+    | Step | Task | Agent | Tier | Model |
+    |:---:|---|:---:|:---:|---|
+    | 1 | [Task Description] | [agent-name] | [High/Medium/Low] | [Model String] |
+    | N | `/sync "type(scope): message"` — lifecycle + audit + commit + push + PR | pm | Medium | [Model String] |
+
+    *Execution Order: [Parallel/Sequential]*
+    ```
+*   **Governance**: Stop and wait for explicit user approval before modifying any application source code.
+
+#### 2. `task.md` (Path: `<appDataDir>\brain\<session-id>\task.md` on Windows / `<appDataDir>/brain/<session-id>/task.md` on macOS/Linux)
+*   **Purpose**: Running TODO list to track development progress dynamically.
+*   **Metadata**: `ArtifactType: "task"`.
+*   **Syntax**:
+    *   `- [ ]` for uncompleted tasks.
+    *   `- [/]` for tasks currently in progress.
+    *   `- [x]` for completed tasks.
+
+#### 3. `walkthrough.md` (Path: `<appDataDir>\brain\<session-id>\walkthrough.md` on Windows / `<appDataDir>/brain/<session-id>/walkthrough.md` on macOS/Linux)
+*   **Purpose**: Post-implementation document summarizing changes, automated test logs, and manual validation details.
+*   **Metadata**: `ArtifactType: "walkthrough"`.
+
+---
+
+### 3. Subagent Instantiation & Async Orchestration
+For parallel execution, quality reviews, or sandboxed research tasks, utilize the custom subagent orchestrator.
+
+> **Agent Architecture**: See [docs/context.md](docs/context.md) for governance rules.
+> **Agent Roster**: See [AGENTS.md](AGENTS.md) for the canonical index of all available agents.
+
+#### Define Subagent (`define_subagent`)
+Instantiate a new reusable subagent type with a unique name, specialized role prompt, and permissions:
+```json
+{
+  "name": "auditor",
+  "description": "Cross-validates documentation and ensures rules are not contradicted",
+  "system_prompt": "You are a consistency auditor...",
+  "enable_write_tools": false,
+  "enable_subagent_tools": false
+}
+```
+
+#### Invoke Subagent (`invoke_subagent`)
+Spawn parallel instances to execute dedicated work concurrently. PM MUST explicitly use `"Workspace": "share"` for execution agents to ensure safe parallel file writing.
+```json
+{
+  "Subagents": [
+    {
+      "TypeName": "auditor",
+      "Role": "Consistency Auditor",
+      "Prompt": "Cross-validate the documentation changes and check for contradictions"
+    }
+  ]
+}
+```
+
+> ⚠️ **Subagent commit rule**: Subagents must NOT issue `git commit` or `git push` directly. All commits must be initiated by PM via `/sync` command only. Direct commits are blocked by the pre-commit `SYNC_ACTIVE` gate.
+
+#### Communication (`send_message`)
+Interact and exchange contracts with spawned agents via their unique `conversationID`.
+The platform supports **Reactive Wakeup**: you do not need to poll or query tasks in a loop. Simply yield execution, and the platform will wake you up automatically as soon as an agent replies or a background task completes.
+
+#### Phase 4 Execution Loop
+See [AGENTS.md - Subagent Roster](AGENTS.md#subagent-roster) for the complete agent list:
+1.  **automation-engineer** implements the changes.
+2.  **PM** verifies against acceptance criteria by running `bun scripts/audit.ts` directly.
+3.  **Quality gate (audit script)** validates compliance.
+
+> Loop and correct if review errors are flagged - maximum **3 iterations** before escalating to the user.
+
+<!-- COMMON-GEMINI:START -->
+#### Cost Optimization (3-Tier Model Strategy)
+The High/Medium/Low tier concept and its usage rules are the Single Source of Truth in [AGENTS.md §3.6 3-Tier Strategy](AGENTS.md#36-3-tier-strategy). Gemini/Antigravity's model-ID mapping (overridden per subagent invocation when appropriate):
+- **High-tier** → `gemini-3.1-pro` (Parameter: `thinking_level="medium"`)
+- **Medium-tier** → `gemini-3.8-flash` (no thinking parameter)
+- **Low-tier** → `gemini-3.8-flash` (no thinking parameter)
+<!-- COMMON-GEMINI:END -->
+
+---
+
+<!-- COMMON-GEMINI:START -->
+### 4. Language Policy for Documentation
+
+All `.md` files you create or modify MUST be in English, except in `ko/` or `locales/ko/` directories (Korean translation zones) or when explicitly declared as a Korean legal/regulatory content exception.
+
+- README.md, CLAUDE.md, GEMINI.md, AGENTS.md, context.md, CHANGELOG.md — English only
+- All documentation in docs/, agents/, skills/ — English only
+- Git commit messages, PR titles, PR descriptions — English only
+- Branch names — English only
+- Code comments — English (unless documenting locale-specific logic)
+
+#### Language Policy Exception
+For files where Korean is legally or academically mandatory, add to the frontmatter:
+```yaml
+lang: ko
+lang_reason: legal # legal | source-material | proper-noun
+```
+*(Not available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md)*
+
+#### Korean Plain-Language Preference (`순우리말`-First)
+When writing Korean documentation or Korean translation output, prefer native Korean words (`순우리말`) over loanwords (`외래어`) whenever a natural, widely-understood native equivalent exists — e.g. prefer `만들기` over `크리에이션`, `알림` over `노티피케이션`. Loanwords effectively settled in Korean (`컴퓨터`, `데이터`, `소프트웨어`, `파일`) and established technical terms remain permitted; clarity takes precedence over forced nativization. New Korean content applies this immediately; existing Korean documents are nativized incrementally (touched sections only, no bulk rewrites).
+<!-- COMMON-GEMINI:END -->
+
+### 5. Agent Dispatch Rules
+
+**MANDATORY PM GATEWAY**: All specialist agent dispatch MUST go through PM.
+
+For the **4-level enforcement model**, **mandatory criteria**, **execution plan format**, and **phase determination**, see [AGENTS.md §3 and §5](AGENTS.md).
+
+#### Antigravity-Specific Dispatch
+
+Before any multi-agent dispatch (2+ agents), PM **must** output an execution plan table prior to invoking the agent orchestration tool.
+
+<!-- COMMON-GEMINI:START -->
+## Execution Plan Boilerplate
+
+The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[AGENTS.md §5.1 Standard Execution Plan Template](AGENTS.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](AGENTS.md#511-design-gate-exemptions)** — do not restate them here.
+
+> **Note (Antigravity-specific)**: Use the literal Gemini model ID (e.g. `gemini-3.1-pro`) in the `Model` column, not a Claude-style short alias.
+
+**Antigravity execution**: Use `invoke_subagent` for specialist dispatch. See §3 (Subagent Instantiation & Async Orchestration) in this file.
+<!-- COMMON-GEMINI:END -->
+
+#### Skill Resolution Priority
+
+When a user request matches a skill trigger, apply this priority order — **enforced every session, regardless of platform**:
+
+| Priority | Source | Location |
+|----------|--------|----------|
+| **1 (highest)** | Local project skills | `skills/<name>/SKILL.md` in the current working directory |
+| **2** | Platform config skills | `.gemini/skills/` in the project root |
+| **3 (lowest)** | Global plugin skills | e.g., `superpowers/brainstorming`, `superpowers/writing-plans` |
+
+**Rule**: If a local skill's `metadata.triggers` matches the user request, use it — do **not** fall through to a global plugin with overlapping intent.
+
+**Canonical conflict — meeting vs. brainstorming**:
+
+| User says | Correct skill | Priority |
+|-----------|--------------|----------|
+| "meeting", "facilitate", "agent discussion" | `skills/meeting-facilitation` | 1 |
+| "brainstorm", "design before coding", "explore options" | `superpowers/brainstorming` | 3 |
+
+When ambiguous, prefer the local skill and confirm intent with the user.
+Explicit invocation: `/meeting "topic" [--agents a,b] [--rounds N] [--dialogue]`
+
+> **Antigravity Command Intercept Rule**: `/meeting` is not a native Antigravity UI slash command. If the user input begins with `/meeting`, you (the Agent) MUST immediately intercept this text pattern and seamlessly execute the `.gemini/commands/meeting.md` process using the provided arguments, exactly as if the user had explicitly requested the skill by name.
+
+---
+
+<!-- COMMON-GEMINI:START -->
+### 6. Workspace & Template Boundary Policy
+
+- **Strict CWD Isolation**: When modifying templates (in `templates/`), you MUST strictly limit your working directory (CWD) to the specific template folder.
+- **No Cross-Modification**: Modifying workspace root files and template files in a single task or session is forbidden. Keep workspace root changes and template changes completely isolated.
+
+> For L1-L2 Fork Model and lifecycle management rules, see [docs/context.md](docs/context.md) and [docs/context.md](docs/context.md).
+<!-- COMMON-GEMINI:END -->
+
+### MCP Configurations & Absolute Resolving
+No `.mcp.json` is currently defined at the project root — MCP servers are configured at the user/global level instead. If a project-level `.mcp.json` is added later, keep command executable paths relative to the project directory for portable cross-platform runs; the platform resolves relative paths (e.g., `./server` or `python scripts/mcp.py`) against the individual project's root folder.
+
+---
+
+<!-- COMMON-GEMINI:START -->
+## Git & PR Additions (Gemini)
+
+All shared Git/PR rules are in [docs/context.md](docs/context.md). Gemini-specific additions:
+
+- **Platform Hook Support**: Gemini CLI supports BeforeTool/AfterTool/PreCompress hooks (stdin(JSON) → stdout(JSON)). AfterTool runs `bun scripts/hooks/post-write-lifecycle-check.ts --platform gemini` after every write_file/replace_file_content/multi_replace_file_content. Antigravity does NOT fire hooks (VS Code extension limitation). Claude Desktop App uses bundled CLI (hooks should fire per Anthropic docs, but workspace testing observed intermittent behavior). If hooks are not firing in your environment, run `bun scripts/hooks/post-write-lifecycle-check.ts` manually before committing.
+- **Commit Protection (SYNC_ACTIVE)**: Direct `git commit` or `git push` calls via `run_command` are **FORBIDDEN**. The pre-commit hook blocks direct commits unless executed through `/sync`. Never manipulate environment variables (e.g., `$env:SYNC_ACTIVE=1; git commit`) to bypass QA gates. If you see `[FAIL] Direct git commits are restricted`, run `/sync \"type: description\"` instead. **`--no-verify` is forbidden** — it bypasses secret scanning and all quality gates.
+- **Sequential Branch Dependency Rule**: Before running `/sync` to open a new PR while a prior PR from the same session is still open and unmerged, merge the prior PR first (or explicitly justify parallel branching in a plan/design doc). `dev-sync.ts` touches shared pipeline files (CHANGELOG.md, memory logs, VERSION_MANIFEST.md, generated READMEs) on every commit, so unmerged parallel branches conflict by default, not by exception. Full rule: context.md §3.3.
+- **PR Language**: Governed by [docs/context.md](docs/context.md). All PR titles, bodies, and review comments must be written in English - no exceptions.
+- **Windows: Git Bash required**: `.githooks/` hook files are Unix shell scripts. Windows users must have Git Bash installed. Run `git config core.hooksPath .githooks` to activate hooks. All `scripts/` operational scripts are TypeScript (`.ts`) — run via `bun scripts/<name>.ts`. No `.sh/.ps1` counterparts (ADR-0036).
+<!-- COMMON-GEMINI:END -->
+
+<!-- COMMON-GEMINI:START -->
+## Pre-Edit Quality Gate (All Platforms)
+
+Before editing any file for the **FIRST time in a session**, the agent MUST:
+
+1. Search for all files that import or require the target file
+2. Identify data schemas, interfaces, and type definitions the file exports
+3. Review the user's instructions for explicit scope constraints
+4. Briefly summarize findings (1-3 sentences) before proceeding
+
+| Platform | Enforcement | Details |
+|----------|:-----------:|---------|
+| Gemini CLI | ✅ Hook (automatic) | BeforeTool `deny` mode — blocked until agent investigates |
+| Antigravity | ✅ Prompt (manual) | Hooks do not fire — agent self-enforces |
+| Codex CLI | ✅ Prompt (manual) | Hooks not wired in Phase 1 — agent self-enforces (ADR-0077) |
+| Codex Desktop App | ✅ Prompt (manual) | Hooks not wired in Phase 1 — agent self-enforces (ADR-0077) |
+
+If the hook is not active (Antigravity), agents must still follow the 4-step process before making first edits.
+<!-- COMMON-GEMINI:END -->
+
+<!-- COMMON-GEMINI:START -->
+### Custom Command Error Recovery
+If a custom slash command or background script returns a non-zero exit code:
+* **Don't bypass hooks**: Never attempt to run git commands with `--no-verify` to bypass the hook system unless under explicit, written user instruction.
+* **Code Page / UTF-8 Issues (Windows)**: If broken Korean characters or Unicode errors appear in CLI output, the Windows terminal code page (CP949) is likely the cause. Ensure `$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` or `chcp 65001` is prepended to scripts.
+* **Diagnostic Audit**: Immediately read the failure stdout log. Common errors include:
+  * Missing staged `CHANGELOG.md` edits (caught by `pre-commit`). Fix by running `/changelog` and staging the file.
+  * Direct push attempt to `main` (caught by `pre-push`). Fix by executing the `/sync` pipeline script which handles target branch generation and PR staging automatically.
+<!-- COMMON-GEMINI:END -->
+
+<!-- COMMON-GEMINI:START -->
+### Windows Platform Requirement
+
+**Git Bash required on Windows**: This workspace uses Unix-style shell scripts (`.sh`) for `.githooks/` hook files. Windows users must have Git Bash installed and configured as the default shell for git hooks.
+
+- Git Bash ships with [Git for Windows](https://gitforwindows.org/) — install if not present.
+- Verify: `git config core.hooksPath` should point to `.githooks/`
+- All `scripts/` operational scripts are TypeScript (`.ts`) — run via `bun scripts/<name>.ts`. No `.sh/.ps1` counterparts (ADR-0036).
+- If a hook fails on Windows with "command not found", run it via Git Bash: `"C:\Program Files\Git\bin\bash.exe" .githooks/pre-commit`
+<!-- COMMON-GEMINI:END -->
+
+## Agent Teams vs. Antigravity Agent Manager
+
+Claude Code has an **Agent Teams** feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) that runs multiple Claude instances in-process with a shared task list and direct messaging. Antigravity 2.0 has a **different** but conceptually similar capability.
+
+### Antigravity Agent Manager
+
+Antigravity 2.0 replaces the single-agent model with an **Agent Manager** — a higher-level UI that orchestrates multiple agents across separate workspaces.
+
+| Aspect | Claude Code Agent Teams | Antigravity Agent Manager |
+|--------|------------------------|--------------------------|
+| Activation | `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings | UI-based — enter Agent Manager view |
+| Architecture | In-process or tmux, single session | Separate workspaces per agent |
+| Shared task list | ✅ Programmatic, shared `~/.claude/tasks/` | ❌ Per-workspace, no shared task list |
+| Direct messaging | ✅ `SendMessage` tool between teammates | ❌ No inter-agent messaging |
+| Lifecycle hooks | `TeammateIdle`, `TaskCreated`, `TaskCompleted` | Not available (Antigravity hooks use different events) |
+| Config setting | `teammateMode: "auto"/"in-process"/"tmux"` | No equivalent setting |
+
+### Antigravity Parallel Agent Workflow
+
+Since Antigravity lacks in-process agent teams, use the **multi-workspace approach**:
+
+1. Open Agent Manager (separate from the editor view)
+2. Add multiple workspaces — one per specialist agent
+3. Assign tasks via natural language in each workspace
+4. Monitor progress via the Inbox
+5. Approve or redirect pending actions
+
+> **PM Gateway note**: In Antigravity sessions, the PM Gateway workflow runs within a single workspace session. For parallel work, use the Gemini CLI subagent dispatch (`invoke_subagent`) rather than Agent Teams.
+
+### GEMINI.md Equivalent Settings
+
+Antigravity does not have `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` or `teammateMode` equivalents. The following settings.json keys from CLAUDE.md are **Claude Code–only**:
+- `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+- `teammateMode`
+- Hook events: `TeammateIdle`, `TaskCreated`, `TaskCompleted`
+
+#### teammateMode (Claude Code Agent Teams execution mode)
+
+**teammateMode** specifies the parallel execution mode when Agent Teams is enabled in Claude Code.
+
+**Values**:
+- `in-process` — Parallel execution within the same process (applies to both Claude Code CLI and Desktop App)
+- `tmux` — Parallel execution using tmux split-pane (Claude Code CLI only, not supported in Desktop App)
+- `null` — Default value (auto-selects based on environment)
+
+**Configuration location**: `.claude/settings.json` → `teammateMode`
+
+**Note**: Antigravity does not have an equivalent to Agent Teams, so teammateMode is a Claude Code-specific setting. Antigravity 2.0+ uses Agent Manager to manage multiple workspace shards.
+
+**Relationship to execution plan table**: teammateMode controls parallel execution mode. The execution plan table defines the multi-agent task dispatch.
+
+---
+
+*Last Updated: 2026-09-22 — added §5 Skill Resolution Priority; added §6 CLAUDE.md/GEMINI.md lifecycle row; added lifecycle-manager and auditor sequence to boilerplate; removed obsolete physical pm approval hooks*
+
+<!-- graft:start -->
+## Graft — repo context graph
+
+This repo is indexed in `graft/`: small linked markdown nodes that explain each
+system and carry exact file:line spans, kept in sync with the code through git.
+
+For ANY task here — understanding how something works, finding where code lives,
+or scoping a change — get context from the graph before grepping or opening
+source files. Re-ask freely (it's cheap) and reuse literal identifiers you
+already have (symbol, error string, file name) as the query. New to this repo?
+Run `graft map` first — a token-budgeted orientation (dir clusters, hubs,
+hotspots), no LLM, no key.
+
+- Run `graft ask "<your question>" --source` → ranked nodes with the relevant
+  code spans inlined (each hit's ≤8-line crux by default; `--full` for whole
+  definitions when the crux isn't enough). Match the tool to the task shape:
+  for understanding or editing, the top node IS the answer — cite its
+  `covers:` file:line spans and edit straight from `--source`. For
+  exhaustive tasks ("every occurrence / every caller of this pattern"), ranked
+  results are top-N, not complete — run `graft grep "<literal>"` instead
+  (exhaustive over indexed files, grouped by enclosing symbol), falling back
+  to raw `grep -rn` only for unindexed files.
+- `graft skeleton <file>` → every definition's signature + span, ~10× cheaper
+  than reading the file; use it to skim an API surface.
+- `graft callers <symbol>` gives precomputed, exact edges — who calls this.
+  Add `--direction out` for what it calls, or `--depth N` to walk
+  transitively for the full blast radius. For structural questions, skip
+  ranking and use this directly.
+- Or browse: `graft/INDEX.md` lists every node; follow the links.
+- Monorepos and folders of multiple repos rank fairly across sub-projects —
+  hits carry `[scope/]` labels naming which one they're from. Narrow with
+  `graft ask "<task>" --in <scope>/` once you know where you're working.
+
+If a returned span is truncated ("+N more lines"), open the file at that exact
+range before finalizing. Only open source files when a node genuinely lacks a
+needed detail, and then at the exact file:line the node points to — never
+re-read whole files.
+
+After big code changes, refresh the graph with `graft build` (deterministic,
+no API key, $0).
+<!-- graft:end -->
