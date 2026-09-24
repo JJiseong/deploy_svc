@@ -21,6 +21,5 @@ COPY --from=deps --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/package.json ./package.json
 COPY --from=builder --chown=bun:bun /app/scripts ./scripts
 VOLUME ["/data"]
-USER bun
 EXPOSE 3000
-CMD ["sh", "-c", "bun scripts/db-migrate.ts && node server.js"]
+CMD ["sh", "-c", "chown -R bun:bun /data && bun scripts/db-migrate.ts && su bun -s /bin/sh -c 'exec node server.js'"]
