@@ -12,16 +12,15 @@ FROM oven/bun:1.3.11 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-RUN addgroup --system --gid 1001 portal && adduser --system --uid 1001 --ingroup portal portal
-RUN mkdir -p /data && chown portal:portal /data
-COPY --from=builder --chown=portal:portal /app/.next/standalone ./
-COPY --from=builder --chown=portal:portal /app/.next/static ./.next/static
-COPY --from=builder --chown=portal:portal /app/public ./public
-COPY --from=builder --chown=portal:portal /app/prisma ./prisma
-COPY --from=deps --chown=portal:portal /app/node_modules ./node_modules
-COPY --from=builder --chown=portal:portal /app/package.json ./package.json
-COPY --from=builder --chown=portal:portal /app/scripts ./scripts
+RUN mkdir -p /data && chown bun:bun /data
+COPY --from=builder --chown=bun:bun /app/.next/standalone ./
+COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
+COPY --from=builder --chown=bun:bun /app/public ./public
+COPY --from=builder --chown=bun:bun /app/prisma ./prisma
+COPY --from=deps --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=builder --chown=bun:bun /app/package.json ./package.json
+COPY --from=builder --chown=bun:bun /app/scripts ./scripts
 VOLUME ["/data"]
-USER portal
+USER bun
 EXPOSE 3000
 CMD ["sh", "-c", "bun scripts/db-migrate.ts && node server.js"]
