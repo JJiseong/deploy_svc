@@ -104,7 +104,9 @@ async function executeTestFile(
     // non-zero on failure) — running them under `bun test` fails with
     // "filters did not match any test files" because their names lack a bun
     // test naming pattern. Everything else is a bun test file.
-    const argv = execMode === 'bun-script' ? [process.execPath, file] : [process.execPath, 'test', file];
+    const argv = execMode === 'bun-script'
+      ? [process.execPath, file]
+      : [process.execPath, 'test', '--preload', join(process.cwd(), 'tests/preload.ts'), file];
     proc = Bun.spawn(argv, {
       env,
       stdout: 'pipe',

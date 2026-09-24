@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BuildPack {
+  AUTO
+  NIXPACKS
+  DOCKERFILE
+}
+
+enum DeploymentStatus {
+  REQUESTED
+  PROVISIONING
+  QUEUED
+  IN_PROGRESS
+  HEALTHY
+  FAILED
+  CANCELLED
+  UNKNOWN
+}
+
+enum AuditOutcome {
+  SUCCESS
+  DENIED
+  FAILURE
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  githubId      String?       @unique
+  githubLogin   String?       @unique
+  role          Role          @default(USER)
+  status        UserStatus    @default(ACTIVE)
+  lastLoginAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  accessGrant   AccessGrant?  @relation("GrantBinding")
+  grantsCreated AccessGrant[] @relation("GrantCreator")
+  deployments   Deployment[]
+  auditLogs     AuditLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AccessGrant {
+  id          String     @id @default(cuid())
+  githubLogin String     @unique
+  role        Role       @default(USER)
+  status      UserStatus @default(ACTIVE)
+  userId      String?    @unique
+  createdById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User?      @relation("GrantBinding", fields: [userId], references: [id], onDelete: SetNull)
+  createdBy   User?      @relation("GrantCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model Deployment {
+  id                      String           @id @default(cuid())
+  userId                  String
+  repository              String
+  branch                  String
+  requestedName           String
+  actualName              String?
+  port                    Int
+  buildPack               BuildPack
+  coolifyApplicationId    String?          @unique
+  latestDeploymentId      String?
+  status                  DeploymentStatus @default(REQUESTED)
+  url                     String?
+  failureSummary          String?
+  basicUsername           String?
+  basicPasswordCiphertext String?
+  basicPasswordIv         String?
+  basicPasswordTag        String?
+  encryptionKeyVersion    Int?
+  idempotencyKey          String           @unique
+  lastPolledAt            DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  owner                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, lastPolledAt])
+}
+
+model AuditLog {
+  id         String       @id @default(cuid())
+  actorId    String?
+  action     String
+  outcome    AuditOutcome
+  targetType String?
+  targetId   String?
+  requestId  String?
+  ipAddress  String?
+  metadata   Json
+  createdAt  DateTime     @default(now())
+  actor      User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  subject     String
+  action      String
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  @@unique([subject, action, windowStart])
+  @@index([expiresAt])
+}

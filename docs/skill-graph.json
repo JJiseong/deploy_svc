@@ -8,6 +8,11 @@
       "layer": "L3"
     },
     {
+      "id": "adr:0001",
+      "type": "adr",
+      "layer": "L3"
+    },
+    {
       "id": "agent-lifecycle-manager",
       "type": "skill",
       "layer": "L3"
@@ -35,6 +40,11 @@
     {
       "id": "code-writer",
       "type": "agent",
+      "layer": "L3"
+    },
+    {
+      "id": "dec:DEC-20260924-01",
+      "type": "decision",
       "layer": "L3"
     },
     {
@@ -372,6 +382,12 @@
         "field": "relates_to",
         "index": 0
       }
+    },
+    {
+      "type": "cites_skill",
+      "from": "dec:DEC-20260924-01",
+      "to": "decision-record",
+      "source": "skills_used"
     },
     {
       "type": "references",

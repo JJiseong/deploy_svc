@@ -16,12 +16,11 @@
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { die } from "./lib/error-handling.ts";
 import { partitionProseTargetsByDelivery } from "./lib/platform-delivery.ts";
 
-const WORKSPACE_ROOT = new URL("..", import.meta.url).pathname
-  .replace(/\/$/, "")
-  .replace(/^\/([A-Z]:)/, "$1");
+const WORKSPACE_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
 interface ModelsBlock {
   [platform: string]: {

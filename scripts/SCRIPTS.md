@@ -62,6 +62,7 @@ bun run <alias>                     # via package.json alias (preferred for CI)
 | `agent-list.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
 | `agent-verify.ts` | L0 | 1.0.2 | active | —| —| L0+L1 | —|
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | —| —| L0+L1 | —|
+| `accessibility-audit.ts` | L0 | 1.2.0 | active | Optional short-lived `A11Y_COOKIE` header enables same-origin authenticated route scans without logging or cross-origin forwarding | —| L3 | —|
 | `archive-memory.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
 | `audit.ts` | L0 | 2.39.0 | active | —| —| L0+L1 | —|
 | `bootstrap-stages.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
@@ -70,6 +71,11 @@ bun run <alias>                     # via package.json alias (preferred for CI)
 | `lib/local-date.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
 | `compile-tokens.ts` | L0 | 1.2.0 | active | —| —| L0+L1 | —|
 | `design-lint.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `db-migrate.ts` | L0 | 1.0.0 | active | —| —| L3 | —|
+| `db-backup.ts` | L0 | 1.1.0 | active | —| —| L3 | —|
+| `db-restore-check.ts` | L0 | 1.0.0 | active | —| —| L3 | —|
+| `route-smoke.ts` | L0 | 1.3.0 | active | Verifies expired-session boundary, denies cross-owner deployment detail/status access, and can run authenticated axe scans | —| L3 | —|
+| `staging-preflight.ts` | L0 | 1.0.0 | active | Validates staging secrets, HTTPS callback, SQLite readiness, and optional Coolify read access without printing credentials | —| L3 | —|
 | `dev-sync.ts` | L0 | 1.16.0 | active | —| —| L0+L1 | —|
 | `dispatch-parallel.ts` | L0 | 1.1.1 | active | —| —| L0+L1 | —|
 | `dispatch-serial.ts` | L0 | 1.1.1 | active | —| —| L0+L1 | —|
@@ -233,6 +239,30 @@ bun run <alias>                     # via package.json alias (preferred for CI)
 ---
 
 ## Guide
+
+#### `accessibility-audit.ts`
+**Purpose**: Run axe-core WCAG 2.1 AA checks against an already-running portal URL.
+**Usage**: `A11Y_BASE_URL=http://127.0.0.1:3000 bun run test:a11y` (the package script uses Node's TypeScript stripping because JSDOM is not compatible with Bun's evaluator). For protected routes, add `A11Y_COOKIE='portal.session-token=<short-lived-token>'`; the value is sent only as an HTTP header and is never printed.
+**Dependencies**: `axe-core`, `jsdom`, and a running portal server. Authenticated scans additionally require a short-lived staging session cookie.
+**v1.2.0**: Restricts `A11Y_COOKIE` to URLs sharing the configured `A11Y_BASE_URL` origin; v1.1.0 added authenticated route scans without credential persistence.
+
+#### `db-backup.ts` and `db-restore-check.ts`
+**Purpose**: Create an AES-256-GCM encrypted SQLite backup from a consistent `VACUUM INTO` snapshot and verify it by restoring to a temporary database.
+**Usage**: `BACKUP_ENCRYPTION_KEY=<64 hex chars> bun run db:backup --output /secure/portal.db.enc`, then `BACKUP_ENCRYPTION_KEY=<64 hex chars> bun run db:restore-check --input /secure/portal.db.enc`.
+**Dependencies**: `DATABASE_URL` pointing to SQLite and a separate backup encryption key.
+**v1.1.0**: Check that the source database exists, checkpoint WAL, snapshot with `VACUUM INTO`, and remove the temporary snapshot after encryption.
+
+#### `route-smoke.ts`
+**Purpose**: Exercise the local standalone server's authentication redirect, administrator boundary, deployment ownership isolation, deployment detail, and status API with short-lived synthetic sessions.
+**Usage**: Start a local portal with a migrated SQLite database, then run `ROUTE_SMOKE_ALLOW_MUTATION=true ROUTE_SMOKE_BASE_URL=http://127.0.0.1:3000 bun run test:routes`. Add `ROUTE_SMOKE_RUN_A11Y=true` to scan authenticated routes with the synthetic admin session.
+**Safety**: Only loopback URLs are accepted; all synthetic users, sessions, and deployments are removed in a `finally` block.
+**Dependencies**: A running local portal, migrated SQLite database, and `@prisma/client`.
+**v1.3.0**: Optional `ROUTE_SMOKE_RUN_A11Y=true` runs the registered axe scanner against authenticated routes; v1.2.0 added cross-owner status denial and v1.1.0 added the expired-session login boundary.
+
+#### `staging-preflight.ts`
+**Purpose**: Validate the staging environment before real OAuth or deployment smoke tests.
+**Usage**: `bun run staging:preflight`; use `bun run staging:preflight -- --skip-coolify` only when checking local secrets and SQLite without contacting Coolify.
+**Safety**: Never prints token values and performs only a read-only Coolify applications-by-tag request.
 
 ### Everyday Development Scripts (Tier 2 —`bun run <script>`)
 

@@ -16,6 +16,7 @@ dist/
 node_modules/
 .next/
 build/
+*.tsbuildinfo
 
 # OS artifacts
 .DS_Store

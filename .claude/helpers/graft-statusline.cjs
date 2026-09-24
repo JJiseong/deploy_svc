@@ -4,7 +4,7 @@ const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { execFileSync } = require('child_process');
 const dir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const BAKED = "C:\\Users\\USER\\AppData\\Local\\nvm\\v24.15.0\\node_modules\\@nanonets\\graft\\dist\\claude";
+const BAKED = "/private/var/folders/fj/1kdhy2cs22nfhzh5khvh1wbw0000gn/T/bunx-501-@nanonets/graft@latest/node_modules/@nanonets/graft/dist/claude";
 
 // The dist/claude dir of @nanonets/graft resolved from a base whose node_modules is searched.
 function fromPkg(base) {

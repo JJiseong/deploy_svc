@@ -75,3 +75,10 @@ Every edge additionally carries a JSON-only `provenance: {file, field, index?}`
 object recording exactly which frontmatter field/entry produced it (not rendered
 in this table). `inputs`/`outputs` are opaque per-skill labels, shown in the Skill
 Catalog table above — not skill references and not yet resolved as graph edges.
+
+## Decisions & ADRs
+
+| Document | Type | Cites skills | References | Supersedes |
+|----------|------|--------------|------------|------------|
+| `adr:0001` | adr | — | — | — |
+| `dec:DEC-20260924-01` | decision | `decision-record` | — | — |

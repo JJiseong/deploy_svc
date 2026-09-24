@@ -1,0 +1,46 @@
+# Repository and local tool state
+.git
+.github
+.agents
+.claude
+.gemini
+.codex
+
+# Dependencies and build output
+node_modules
+.next
+*.tsbuildinfo
+
+# Local secrets and runtime data
+.env
+.env.*
+!.env.sample
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Test and editor artifacts
+tests/.temp
+.sandbox
+.tmp
+memory/archive
+.DS_Store
+
+# Workspace-only governance and documentation are not needed in the image
+agents
+skills
+docs
+memory
+procedures
+schemas
+templates
+README.md
+README_ko.md
+AGENTS.md
+CLAUDE.md
+CODEX.md
+GEMINI.md
+CHANGELOG.md
+LICENSE
+PROMOTION_CHECKLIST.md
