@@ -12,6 +12,7 @@ FROM oven/bun:1.3.11 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl wget \
   && rm -rf /var/lib/apt/lists/*
