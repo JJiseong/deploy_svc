@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] 2026-09-01
 
+- **[2026-09-26]**: fix: bind first-login GitHub users after Auth.js adapter persistence and add an OAuth access regression test.
 - **[2026-09-24]**: feat: add the Next.js portal, Prisma SQLite schema, GitHub OAuth access control, Coolify deployment orchestration, admin screens, audit logging, encrypted credentials, and production container.
 - **[2026-09-24]**: security: patch Next.js/Auth.js/Prisma dependency vulnerabilities and add a clean Bun audit gate.
 - **[2026-09-24]**: hardening: add server-only boundaries, immutable GitHub identity binding, idempotency race recovery, accessible mobile navigation, focus-safe error recovery, and resilient deployment polling.
