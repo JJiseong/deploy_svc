@@ -24,6 +24,30 @@ export async function isGithubLoginAllowed(
   return grant?.status === "ACTIVE";
 }
 
+/**
+ * Check the GitHub identity during Auth.js' signIn callback.
+ *
+ * Auth.js invokes signIn before it creates a new adapter user. The first OAuth
+ * callback therefore cannot bind or update a database user yet; that work is
+ * intentionally performed from the signIn event after persistence completes.
+ */
+export async function authorizeGithubSignIn(
+  user: { id?: string | null },
+  profile: { id?: string | number | null; login?: string | null },
+  bootstrapLogin: string,
+  client: AccessClient = prisma,
+): Promise<boolean> {
+  const login = typeof profile.login === "string" ? profile.login : "";
+  if (!profile.id || !login || !(await isGithubLoginAllowed(login, bootstrapLogin, client))) return false;
+
+  if (user.id) {
+    const existing = await client.user.findUnique({ where: { id: user.id }, select: { githubId: true } });
+    if (existing?.githubId && existing.githubId !== String(profile.id)) return false;
+  }
+
+  return true;
+}
+
 export async function bindGithubUser(
   userId: string,
   profile: { id: string | number; login: string; name?: string | null; email?: string | null; avatar_url?: string | null },
