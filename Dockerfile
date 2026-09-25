@@ -26,4 +26,4 @@ COPY --from=builder --chown=bun:bun /app/package.json ./package.json
 COPY --from=builder --chown=bun:bun /app/scripts ./scripts
 VOLUME ["/data"]
 EXPOSE 3000
-CMD ["sh", "-c", "chown -R bun:bun /data && bun scripts/db-migrate.ts && exec node server.js"]
+CMD ["sh", "-c", "chown -R bun:bun /data && if [ ! -f /data/portal.db ]; then bun scripts/db-migrate.ts; fi && exec node server.js"]
