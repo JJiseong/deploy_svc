@@ -13,7 +13,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl \
+  && apt-get install -y --no-install-recommends curl wget \
   && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data && chown bun:bun /data
 COPY --from=builder --chown=bun:bun /app/.next/standalone ./
