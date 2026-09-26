@@ -1,5 +1,5 @@
 import Link from "next/link";
 
 export default function NotFound() {
-  return <main className="center-page"><section className="card narrow"><p className="eyebrow">Not found</p><h1>Deployment not found</h1><p className="muted">The deployment may not exist or you may not have access to it.</p><Link className="button primary" href="/dashboard">Return to dashboard</Link></section></main>;
+  return <main className="center-page"><section className="card narrow"><p className="eyebrow">찾을 수 없음</p><h1>배포를 찾을 수 없습니다</h1><p className="muted">배포가 없거나 이 배포를 볼 권한이 없습니다.</p><Link className="button primary" href="/dashboard">대시보드로 돌아가기</Link></section></main>;
 }

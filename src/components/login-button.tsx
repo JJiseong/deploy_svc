@@ -9,5 +9,5 @@ export function LoginButton() {
     try { await signIn("github", { callbackUrl: "/dashboard" }); }
     catch { setPending(false); }
   }
-  return <button className="button primary" onClick={() => void start()} disabled={pending} aria-busy={pending}>{pending ? "Connecting to GitHub…" : "Continue with GitHub"}</button>;
+  return <button className="button primary" onClick={() => void start()} disabled={pending} aria-busy={pending}>{pending ? "GitHub에 연결하는 중…" : "GitHub로 로그인"}</button>;
 }

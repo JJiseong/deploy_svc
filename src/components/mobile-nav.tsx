@@ -41,7 +41,7 @@ export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
   }, [open]);
 
   return <div className="mobile-nav">
-    <button ref={toggleRef} type="button" className="button secondary mobile-nav-toggle" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((value) => !value)}>{open ? "Close menu" : "Open menu"}</button>
-    {open && <div ref={menuRef} id="mobile-menu" className="mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation menu"><NavLinks isAdmin={isAdmin} mobile onNavigate={() => setOpen(false)} /></div>}
+    <button ref={toggleRef} type="button" className="button secondary mobile-nav-toggle" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((value) => !value)}>{open ? "메뉴 닫기" : "메뉴 열기"}</button>
+    {open && <div ref={menuRef} id="mobile-menu" className="mobile-menu" role="dialog" aria-modal="true" aria-label="탐색 메뉴"><NavLinks isAdmin={isAdmin} mobile onNavigate={() => setOpen(false)} /></div>}
   </div>;
 }
