@@ -118,16 +118,16 @@ try {
 
   const adminUsers = await request("/admin/users", adminToken);
   if (!adminUsers.response.ok) throw new Error(`admin users route returned HTTP ${adminUsers.response.status}`);
-  expectBody("admin users route", adminUsers.body, "Users");
+  expectBody("admin users route", adminUsers.body, "사용자 관리");
 
   const memberAdmin = await request("/admin/users", memberToken);
-  expectBody("member admin route", memberAdmin.body, "Access denied");
+  expectBody("member admin route", memberAdmin.body, "접근이 거부되었습니다");
 
   const owned = await request(`/deployments/${ownedDeploymentId}`, memberToken);
   expectBody("owned deployment route", owned.body, "route-smoke-owned");
 
   const other = await request(`/deployments/${otherDeploymentId}`, memberToken);
-  expectBody("other-owner deployment route", other.body, "Deployment not found");
+  expectBody("other-owner deployment route", other.body, "배포를 찾을 수 없습니다");
 
   const status = await request(`/api/deployments/${ownedDeploymentId}/status`, memberToken);
   if (!status.response.ok) throw new Error(`deployment status route returned HTTP ${status.response.status}`);
