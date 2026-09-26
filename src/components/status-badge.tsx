@@ -1,4 +1,4 @@
-const labels: Record<string, string> = { REQUESTED: "Requested", PROVISIONING: "Provisioning", QUEUED: "Queued", IN_PROGRESS: "In progress", HEALTHY: "Healthy", FAILED: "Failed", CANCELLED: "Cancelled", UNKNOWN: "Unknown" };
+const labels: Record<string, string> = { REQUESTED: "요청됨", PROVISIONING: "준비 중", QUEUED: "대기 중", IN_PROGRESS: "진행 중", HEALTHY: "정상", FAILED: "실패", CANCELLED: "취소됨", UNKNOWN: "확인 불가" };
 const icons: Record<string, string> = { REQUESTED: "○", PROVISIONING: "◌", QUEUED: "◷", IN_PROGRESS: "↻", HEALTHY: "✓", FAILED: "!", CANCELLED: "×", UNKNOWN: "?" };
 export function StatusBadge({ status }: { status: string }) {
   const tone = status.toLowerCase().replace("_", "-");
