@@ -4,11 +4,25 @@ import { spawnSync } from "node:child_process";
 
 const databasePath = `/tmp/deploy-svc-integration-${process.pid}.db`;
 process.env.DATABASE_URL = `file:${databasePath}`;
+process.env.AUTH_SECRET = "a".repeat(32);
+process.env.AUTH_GITHUB_ID = "test-client";
+process.env.AUTH_GITHUB_SECRET = "test-secret";
+process.env.BOOTSTRAP_GITHUB_LOGIN = "JJiseong";
+process.env.APP_ENCRYPTION_KEY = "b".repeat(64);
+process.env.ALLOWED_GITHUB_OWNERS = "JJiseong";
+process.env.COOLIFY_BASE_URL = "https://coolify.example.test";
+process.env.COOLIFY_READ_API_TOKEN = "read-token";
+process.env.COOLIFY_WRITE_API_TOKEN = "write-token";
+process.env.COOLIFY_DEPLOY_API_TOKEN = "deploy-token";
+process.env.COOLIFY_PROJECT_UUID = "project";
+process.env.COOLIFY_SERVER_UUID = "server";
+process.env.COOLIFY_GITHUB_APP_UUID = "github-app";
 
 const { prisma, checkDatabaseReady } = await import("../src/lib/db");
 const { bindGithubUser, isGithubLoginAllowed } = await import("../src/lib/auth/access");
 const { createAccessGrant, updateAccessGrantRole, setAccessGrantStatus } = await import("../src/lib/auth/grants");
 const { createPrismaAdapter } = await import("../src/lib/auth/adapter");
+const { getGithubAccessToken } = await import("../src/lib/github/account");
 
 beforeAll(() => {
   const result = spawnSync("./node_modules/.bin/prisma", ["migrate", "deploy", "--schema", "prisma/schema.prisma"], { env: { ...process.env, RUST_LOG: "info" }, stdio: "ignore" });
@@ -89,7 +103,7 @@ describe("SQLite integration", () => {
     await prisma.user.deleteMany({ where: { id: { in: [actor.id, member.id] } } });
   });
 
-  test("Auth adapter does not persist provider bearer tokens and handles sessions", async () => {
+  test("Auth adapter encrypts provider bearer tokens and handles sessions", async () => {
     const user = await prisma.user.create({ data: { githubId: "github-adapter", githubLogin: "adapter-user", role: "USER", status: "ACTIVE" } });
     const adapter = createPrismaAdapter();
     await adapter.linkAccount?.({
@@ -104,9 +118,11 @@ describe("SQLite integration", () => {
       scope: "read:user",
     });
     const account = await prisma.account.findUniqueOrThrow({ where: { provider_providerAccountId: { provider: "github", providerAccountId: "github-account-adapter" } } });
-    expect(account.access_token).toBeNull();
+    expect(account.access_token).toMatch(/^enc:v1:/);
+    expect(account.access_token).not.toContain("provider-access-token");
     expect(account.refresh_token).toBeNull();
     expect(account.id_token).toBeNull();
+    expect(await getGithubAccessToken(user.id)).toBe("provider-access-token");
 
     const session = await adapter.createSession!({ sessionToken: "adapter-session", userId: user.id, expires: new Date(Date.now() + 60_000) });
     const loaded = await adapter.getSessionAndUser!(session.sessionToken);
