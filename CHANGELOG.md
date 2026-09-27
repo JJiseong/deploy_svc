@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Keep generated Coolify basic-auth passwords within the upstream database column limit after Coolify encrypts them.
+- Fall back to application deployment history when Coolify cannot resolve a deployment by UUID.
 
 All notable changes to this project will be documented in this file.
 

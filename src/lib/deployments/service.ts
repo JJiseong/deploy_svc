@@ -6,7 +6,7 @@ import { getEnv } from "../env";
 import { writeAuditEvent } from "../audit";
 import { requireUser, type AuthorizedUser } from "../auth/authorization";
 import { deploymentInputSchema, isAllowedRepositoryOwner, type DeploymentInput } from "../validation/portal";
-import { CoolifyClient, mapCoolifyStatus, safeHttpsUrl, type CoolifyApplication } from "../coolify/client";
+import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
 import { encryptSecret, generateBasicPassword, decryptSecret } from "../security/crypto";
 import { consumePersistedRateLimit } from "../security/rate-limit";
 
@@ -117,6 +117,7 @@ export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId
   const deployment = await prisma.deployment.findUnique({ where: { id: deploymentId } });
   if (!deployment || (activeUser.role !== "ADMIN" && deployment.userId !== activeUser.id)) return null;
   if (!deployment.coolifyApplicationId || !deployment.latestDeploymentId) return deployment;
+  const latestDeploymentId = deployment.latestDeploymentId;
   if (!ACTIVE.has(deployment.status)) {
     const deployments = await client.listApplicationDeployments(deployment.coolifyApplicationId);
     const newest = deployments
@@ -132,7 +133,21 @@ export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId
     return updated;
   }
   if (deployment.lastPolledAt && Date.now() - deployment.lastPolledAt.getTime() < 3_000) return deployment;
-  const current = await client.getDeployment(deployment.latestDeploymentId);
+  let current: CoolifyDeployment;
+  try {
+    current = await client.getDeployment(latestDeploymentId);
+  } catch (error) {
+    // Some Coolify versions do not expose the single-deployment endpoint (or
+    // return 404 for a deployment UUID that is still being indexed). The
+    // application-scoped list endpoint is the compatible fallback and also
+    // lets us recover if Coolify assigned a replacement deployment UUID.
+    if (!(error instanceof CoolifyError) || ![404, 405].includes(error.status)) throw error;
+    const deployments = await client.listApplicationDeployments(deployment.coolifyApplicationId);
+    const matching = deployments.find((item) => [item.uuid, item.id, item.deployment_uuid].includes(latestDeploymentId));
+    current = matching ?? deployments
+      .filter((item) => typeof item.uuid === "string" || typeof item.id === "string" || typeof item.deployment_uuid === "string")
+      .sort((left, right) => String(right.created_at ?? right.createdAt ?? "").localeCompare(String(left.created_at ?? left.createdAt ?? "")))[0] ?? (() => { throw error; })();
+  }
   const status = mapCoolifyStatus(current.status);
   const updated = await prisma.deployment.update({ where: { id: deployment.id }, data: { status, lastPolledAt: new Date(), failureSummary: status === "FAILED" ? "The latest deployment failed. Review the repository build and try again." : null, url: safeHttpsUrl(deployment.url) ?? safeHttpsUrl(current.deployment_url) ?? safeHttpsUrl(current.fqdn) } });
   if (status === "FAILED" && deployment.status !== "FAILED") {
