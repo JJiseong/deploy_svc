@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] 2026-09-01
 
+- **[2026-09-27]**: feat: discover allowed GitHub repositories and branches after OAuth login, auto-fill deployment defaults, and retain manual entry only as a fallback.
 - **[2026-09-26]**: feat: localize the portal interface to Korean and add an in-app usage guide with deployment, credential, and administrator instructions.
 - **[2026-09-26]**: fix: bind first-login GitHub users after Auth.js adapter persistence and add an OAuth access regression test.
 - **[2026-09-24]**: feat: add the Next.js portal, Prisma SQLite schema, GitHub OAuth access control, Coolify deployment orchestration, admin screens, audit logging, encrypted credentials, and production container.

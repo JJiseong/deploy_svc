@@ -12,7 +12,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Read provider credentials from process.env here so `next build` does not
   // require production secrets in the Docker builder. Request-time callbacks
   // still call getEnv(), which validates the complete runtime configuration.
-  providers: [GitHub({ clientId: process.env.AUTH_GITHUB_ID ?? "", clientSecret: process.env.AUTH_GITHUB_SECRET ?? "" })],
+  providers: [GitHub({
+    clientId: process.env.AUTH_GITHUB_ID ?? "",
+    clientSecret: process.env.AUTH_GITHUB_SECRET ?? "",
+    authorization: { params: { scope: "read:user user:email repo" } },
+  })],
   trustHost: process.env.AUTH_TRUST_HOST?.trim().toLowerCase() !== "false",
   session: { strategy: "database", maxAge: 60 * 60 * 8 },
   pages: { signIn: "/login" },
