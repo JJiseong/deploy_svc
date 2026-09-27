@@ -1,7 +1,7 @@
 import "server-only";
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
-import { createPrismaAdapter } from "./lib/auth/adapter";
+import { createPrismaAdapter, persistProviderAccessToken } from "./lib/auth/adapter";
 import { authorizeGithubSignIn, bindGithubUser } from "./lib/auth/access";
 import { prisma } from "./lib/db";
 import { getEnv } from "./lib/env";
@@ -27,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
-    async signIn({ user, profile }) {
+    async signIn({ user, profile, account }) {
       const env = getEnv();
       const login = typeof profile?.login === "string" ? profile.login : "";
       const authorized = await authorizeGithubSignIn(
@@ -39,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await writeAuditEvent({ action: "AUTH_SIGN_IN", outcome: "DENIED", metadata: { githubLogin: login || "unknown" } });
         return false;
       }
+      if (user.id) await persistProviderAccessToken(user.id, "github", account?.access_token);
       return true;
     },
     async session({ session, user }) {

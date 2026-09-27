@@ -21,7 +21,7 @@ process.env.COOLIFY_GITHUB_APP_UUID = "github-app";
 const { prisma, checkDatabaseReady } = await import("../src/lib/db");
 const { bindGithubUser, isGithubLoginAllowed } = await import("../src/lib/auth/access");
 const { createAccessGrant, updateAccessGrantRole, setAccessGrantStatus } = await import("../src/lib/auth/grants");
-const { createPrismaAdapter } = await import("../src/lib/auth/adapter");
+const { createPrismaAdapter, persistProviderAccessToken } = await import("../src/lib/auth/adapter");
 const { getGithubAccessToken } = await import("../src/lib/github/account");
 
 beforeAll(() => {
@@ -123,6 +123,9 @@ describe("SQLite integration", () => {
     expect(account.refresh_token).toBeNull();
     expect(account.id_token).toBeNull();
     expect(await getGithubAccessToken(user.id)).toBe("provider-access-token");
+    await prisma.account.updateMany({ where: { userId: user.id }, data: { access_token: null } });
+    await persistProviderAccessToken(user.id, "github", "provider-access-token-refreshed");
+    expect(await getGithubAccessToken(user.id)).toBe("provider-access-token-refreshed");
 
     const session = await adapter.createSession!({ sessionToken: "adapter-session", userId: user.id, expires: new Date(Date.now() + 60_000) });
     const loaded = await adapter.getSessionAndUser!(session.sessionToken);

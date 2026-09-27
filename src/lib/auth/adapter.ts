@@ -9,6 +9,14 @@ function encryptProviderAccessToken(token: string): string {
   return ["enc", `v${encrypted.keyVersion}`, encrypted.ciphertext, encrypted.iv, encrypted.authTag].join(":");
 }
 
+export async function persistProviderAccessToken(userId: string, provider: string, accessToken: string | undefined): Promise<void> {
+  if (!accessToken?.trim()) return;
+  await prisma.account.updateMany({
+    where: { userId, provider },
+    data: { access_token: encryptProviderAccessToken(accessToken) },
+  });
+}
+
 export function createPrismaAdapter(): Adapter {
   const adapter = PrismaAdapter(prisma);
   const originalLinkAccount = adapter.linkAccount;
