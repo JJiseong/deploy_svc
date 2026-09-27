@@ -16,7 +16,7 @@ export default async function GuidePage() {
         <h2 id="guide-start-heading">빠른 시작</h2>
         <ol className="guide-steps">
           <li><strong>GitHub로 로그인</strong><span>관리자가 허용한 GitHub 계정으로 로그인합니다.</span></li>
-          <li><strong>저장소 정보 입력</strong><span>저장소, 브랜치, 애플리케이션 이름, 포트를 입력합니다.</span></li>
+          <li><strong>저장소 선택</strong><span>저장소를 검색해 선택하면 기본 브랜치와 애플리케이션 이름이 자동으로 채워집니다.</span></li>
           <li><strong>배포 시작</strong><span>빌드 방식을 선택하고 <em>저장소 배포</em>를 누릅니다.</span></li>
           <li><strong>상태 확인</strong><span>배포 상세 화면에서 상태가 정상으로 바뀌는지 확인합니다.</span></li>
           <li><strong>애플리케이션 열기</strong><span>정상 배포가 끝나면 <em>애플리케이션 열기</em>를 눌러 서비스로 이동합니다.</span></li>
@@ -25,10 +25,11 @@ export default async function GuidePage() {
       <section className="card" aria-labelledby="guide-fields-heading">
         <h2 id="guide-fields-heading">입력 항목</h2>
         <dl className="guide-list">
-          <div><dt>저장소</dt><dd>GitHub 저장소를 <code>소유자/저장소명</code> 형식으로 입력합니다.</dd></div>
-          <div><dt>브랜치</dt><dd>배포할 브랜치입니다. 기본값은 <code>main</code>입니다.</dd></div>
-          <div><dt>애플리케이션 이름</dt><dd>배포된 애플리케이션을 구분할 이름입니다. 영문 소문자, 숫자, 하이픈을 사용합니다.</dd></div>
+          <div><dt>저장소 검색</dt><dd>GitHub 저장소 이름이나 설명으로 검색한 뒤 목록에서 선택합니다. 허용된 소유자의 저장소만 표시됩니다.</dd></div>
+          <div><dt>브랜치</dt><dd>저장소를 선택하면 브랜치 목록이 자동으로 표시됩니다. 기본 브랜치가 먼저 선택됩니다.</dd></div>
+          <div><dt>애플리케이션 이름</dt><dd>저장소 이름을 바탕으로 자동 생성되며, 영문 소문자·숫자·하이픈으로 수정할 수 있습니다.</dd></div>
           <div><dt>포트</dt><dd>애플리케이션이 수신하는 포트입니다. 기본값은 <code>3000</code>입니다.</dd></div>
+          <div><dt>수기 입력</dt><dd>GitHub API를 사용할 수 없을 때만 <em>저장소를 직접 입력</em>으로 전환할 수 있습니다.</dd></div>
           <div><dt>빌드 방식</dt><dd><em>자동</em>을 권장합니다. 저장소에 맞는 방식을 직접 선택할 수도 있습니다.</dd></div>
         </dl>
       </section>
