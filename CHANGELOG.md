@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - **[2026-09-27]**: fix: encrypt GitHub access tokens at rest so repository discovery can use the approved OAuth grant.
 - **[2026-09-27]**: fix: refresh encrypted GitHub tokens on every approved sign-in.
+- **[2026-09-27]**: fix: install CA certificates in the production image so Coolify HTTPS API calls work from the portal container.
 - **[2026-09-27]**: feat: discover allowed GitHub repositories and branches after OAuth login, auto-fill deployment defaults, and retain manual entry only as a fallback.
 - **[2026-09-26]**: feat: localize the portal interface to Korean and add an in-app usage guide with deployment, credential, and administrator instructions.
 - **[2026-09-26]**: fix: bind first-login GitHub users after Auth.js adapter persistence and add an OAuth access regression test.
