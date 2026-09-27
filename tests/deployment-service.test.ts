@@ -22,7 +22,7 @@ process.env.COOLIFY_ENVIRONMENT_NAME = "production";
 
 const { prisma } = await import("../src/lib/db");
 const { createDeployment, revealBasicAuth, refreshDeploymentStatus } = await import("../src/lib/deployments/service");
-const { CoolifyClient } = await import("../src/lib/coolify/client");
+const { CoolifyClient, CoolifyError } = await import("../src/lib/coolify/client");
 const { getEnv } = await import("../src/lib/env");
 
 class FakeCoolify {
@@ -162,5 +162,22 @@ describe("deployment orchestration", () => {
     expect(result?.latestDeploymentId).toBe("deployment-new");
     const failureEvents = await prisma.auditLog.findMany({ where: { actorId: owner.id, action: "DEPLOYMENT_FAILURE", targetId: deployment.id } });
     expect(failureEvents).toHaveLength(1);
+  });
+
+  test("falls back to application deployment list when single deployment lookup is unavailable", async () => {
+    const owner = await prisma.user.create({ data: { githubId: "github-list-fallback", githubLogin: "list-fallback-owner", role: "USER", status: "ACTIVE" } });
+    const deployment = await prisma.deployment.create({ data: { userId: owner.id, repository: "jjiseong/demo", branch: "main", requestedName: "demo", port: 3000, buildPack: "AUTO", idempotencyKey: "list-fallback-1", status: "IN_PROGRESS", coolifyApplicationId: "app-list-fallback", latestDeploymentId: "deployment-list-fallback" } });
+    let listCalls = 0;
+    const client = {
+      getDeployment: async () => { throw new CoolifyError(404); },
+      listApplicationDeployments: async () => {
+        listCalls += 1;
+        return [{ uuid: "deployment-list-fallback", status: "finished", created_at: new Date().toISOString(), deployment_url: "https://fallback.example.test" }];
+      },
+    } as unknown as Parameters<typeof refreshDeploymentStatus>[2];
+    const result = await refreshDeploymentStatus({ id: owner.id, githubLogin: owner.githubLogin, role: "USER", status: "ACTIVE" }, deployment.id, client);
+    expect(result?.status).toBe("HEALTHY");
+    expect(result?.url).toBe("https://fallback.example.test/");
+    expect(listCalls).toBe(1);
   });
 });
