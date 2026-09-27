@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Keep generated Coolify basic-auth passwords within the upstream database column limit after Coolify encrypts them.
+
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] 2026-09-01

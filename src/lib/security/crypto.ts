@@ -37,5 +37,7 @@ export function decryptSecret(secret: Pick<EncryptedSecret, "ciphertext" | "iv" 
 }
 
 export function generateBasicPassword(): string {
-  return randomBytes(24).toString("base64url");
+  // Coolify encrypts this value before storing it in its varchar(255) column.
+  // 23 bytes encode to 31 characters, keeping the encrypted value within that limit.
+  return randomBytes(23).toString("base64url");
 }
