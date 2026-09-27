@@ -14,6 +14,7 @@ const env = parseEnv({
 describe("security primitives", () => {
   test("encrypts and decrypts a generated password", () => {
     const password = generateBasicPassword();
+    expect(password.length).toBeLessThanOrEqual(31);
     const encrypted = encryptSecret(password, Buffer.from(env.APP_ENCRYPTION_KEY, "hex"));
     expect(decryptSecret(encrypted, Buffer.from(env.APP_ENCRYPTION_KEY, "hex"))).toBe(password);
     expect(encrypted.ciphertext).not.toBe(password);
