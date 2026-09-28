@@ -21,6 +21,7 @@ enum BuildPack {
   AUTO
   NIXPACKS
   DOCKERFILE
+  STATIC
 }
 
 enum DeploymentStatus {
@@ -46,6 +47,9 @@ model User {
   email         String?       @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String?
+  mustChangePassword Boolean @default(true)
+  passwordChangedAt DateTime?
   githubId      String?       @unique
   githubLogin   String?       @unique
   role          Role          @default(USER)
@@ -128,8 +132,8 @@ model Deployment {
   status                  DeploymentStatus @default(REQUESTED)
   url                     String?
   failureSummary          String?
-  basicUsername           String?
-  basicPasswordCiphertext String?
+  basicUsername           String? // legacy data, no longer written or exposed
+  basicPasswordCiphertext String? // legacy data, cleared by public-app migration
   basicPasswordIv         String?
   basicPasswordTag        String?
   encryptionKeyVersion    Int?

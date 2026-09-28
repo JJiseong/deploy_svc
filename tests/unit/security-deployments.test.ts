@@ -60,13 +60,16 @@ describe("Coolify contracts", () => {
   test("sends fixed safe application settings and validates response", async () => {
     let request: Request | undefined;
     const client = new CoolifyClient(env, async (input, init) => { request = new Request(input, init); return new Response(JSON.stringify({ uuid: "app-1", fqdn: "https://app.example.com" }), { status: 201, headers: { "content-type": "application/json" } }); });
-    const result = await client.createApplication({ name: "demo", repository: "JJiseong/demo", branch: "main", port: 3000, buildPack: "nixpacks", tag: "tag-1", basicUsername: "portal-user", basicPassword: "password" });
+    const result = await client.createApplication({ name: "demo", repository: "JJiseong/demo", branch: "main", port: 3000, buildPack: "nixpacks", tag: "tag-1" });
     expect(result.uuid).toBe("app-1");
     const body = JSON.parse(await request!.text()) as Record<string, unknown>;
     expect(body.limits_cpus).toBe("0.5");
     expect(body.limits_memory).toBe("512m");
     expect(body.is_preview_deployments_enabled).toBe(false);
     expect(body.is_force_https_enabled).toBe(true);
+    expect(body.is_http_basic_auth_enabled).toBe(false);
+    expect(body.noindex_domains).toBe(true);
+    expect(body).not.toHaveProperty("http_basic_auth_password");
     expect(body.tags).toEqual(["tag-1"]);
     expect(body.git_repository).toBe("https://github.com/JJiseong/demo");
   });

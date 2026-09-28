@@ -1,0 +1,1 @@
+export function GitHubConnect() { return <section className="card"><p className="eyebrow">1회 연결</p><h2>GitHub를 연결하세요</h2><p className="muted">저장소와 버전을 보여 주기 위해서만 GitHub 권한을 사용합니다. 포털 로그인 정보와는 별개입니다.</p><a className="button primary" href="/api/github/connect">GitHub 연결</a></section>; }

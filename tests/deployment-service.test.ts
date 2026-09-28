@@ -50,38 +50,17 @@ afterAll(async () => {
 });
 
 describe("deployment orchestration", () => {
-  test("persists an encrypted request, starts Coolify, and honors idempotency", async () => {
+  test("blocks deployment until the portal account connects GitHub", async () => {
     const user = await prisma.user.create({ data: { githubId: "github-1", githubLogin: "jjiseong", role: "ADMIN", status: "ACTIVE" } });
     const fake = new FakeCoolify();
-    const input = { repository: "JJiseong/demo", branch: "main", applicationName: "demo", port: 3000, buildPack: "AUTO", idempotencyKey: "integration-idempotency-1" };
+    const input = { repository: "JJiseong/demo", branch: "main", idempotencyKey: "integration-idempotency-1" };
     const actor = { id: user.id, githubLogin: user.githubLogin, role: user.role, status: user.status };
     const first = await createDeployment(actor, input, fake as unknown as Parameters<typeof createDeployment>[2]);
-    expect(first.ok).toBe(true);
-    if (!first.ok) return;
-    expect(first.data.status).toBe("QUEUED");
-    expect(fake.createCalls).toBe(1);
-    expect(fake.deployCalls).toBe(1);
-
-    const stored = await prisma.deployment.findUniqueOrThrow({ where: { id: first.data.id } });
-    expect(stored.basicPasswordCiphertext).not.toBe("portal-user");
-    expect(stored.coolifyApplicationId).toBe("app-1");
-    const second = await createDeployment(actor, input, fake as unknown as Parameters<typeof createDeployment>[2]);
-    expect(second).toEqual(first);
-    expect(fake.createCalls).toBe(1);
-    const credentials = await revealBasicAuth(actor, first.data.id);
-    expect(credentials.ok).toBe(true);
-    if (credentials.ok) {
-      expect(credentials.data.username).toBe("portal-user");
-      const revealEvents = await prisma.auditLog.findMany({
-        where: { actorId: user.id, action: "CREDENTIAL_REVEAL", targetId: first.data.id },
-        orderBy: { createdAt: "desc" },
-      });
-      expect(revealEvents).toHaveLength(1);
-      expect(JSON.stringify(revealEvents[0]?.metadata ?? {})).not.toContain(credentials.data.password);
-    }
+    expect(first).toEqual({ ok: false, error: { code: "GITHUB_NOT_CONNECTED", message: "배포하려면 먼저 GitHub를 연결하세요." } });
+    expect(fake.createCalls).toBe(0);
   });
 
-  test("runs the deployment service through the typed Coolify HTTP contract", async () => {
+  test("does not create a Coolify application without a GitHub connection", async () => {
     const user = await prisma.user.create({ data: { githubId: "github-http-contract", githubLogin: "http-contract-owner", role: "ADMIN", status: "ACTIVE" } });
     const calls: Array<{ method: string; path: string; body: Record<string, unknown> | null; authorization: string | null }> = [];
     const client = new CoolifyClient(getEnv(), async (input, init) => {
@@ -95,37 +74,11 @@ describe("deployment orchestration", () => {
     const result = await createDeployment({ id: user.id, githubLogin: user.githubLogin, role: "ADMIN", status: "ACTIVE" }, {
       repository: "JJiseong/http-contract",
       branch: "main",
-      applicationName: "http-contract",
-      port: 3000,
-      buildPack: "AUTO",
       idempotencyKey: "http-contract-check-1",
     }, client as unknown as Parameters<typeof createDeployment>[2]);
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.status).toBe("QUEUED");
-    expect(calls.map((call) => call.path)).toEqual([
-      "/api/v1/applications/private-github-app",
-      "/api/v1/deploy?uuid=app-http-contract&force=false",
-    ]);
-    expect(calls[0]?.authorization).toBe("Bearer write-token");
-    expect(calls[1]?.authorization).toBe("Bearer deploy-token");
-    expect(calls[0]?.body).toMatchObject({
-      project_uuid: "project",
-      server_uuid: "server",
-      environment_name: "production",
-      github_app_uuid: "github-app",
-      git_repository: "https://github.com/JJiseong/http-contract",
-      is_auto_deploy_enabled: true,
-      is_force_https_enabled: true,
-      is_http_basic_auth_enabled: true,
-      limits_cpus: "0.5",
-      limits_memory: "512m",
-    });
-    const stored = await prisma.deployment.findUniqueOrThrow({ where: { id: result.data.id } });
-    expect(stored.coolifyApplicationId).toBe("app-http-contract");
-    expect(stored.latestDeploymentId).toBe("deployment-http-contract");
-    expect(stored.url).toBe("https://http-contract.example.test/");
+    expect(result).toEqual({ ok: false, error: { code: "GITHUB_NOT_CONNECTED", message: "배포하려면 먼저 GitHub를 연결하세요." } });
+    expect(calls).toHaveLength(0);
   });
 
   test("returns a neutral result for a different owner", async () => {
@@ -133,7 +86,7 @@ describe("deployment orchestration", () => {
     const other = await prisma.user.create({ data: { githubId: "github-other", githubLogin: "other", role: "USER", status: "ACTIVE" } });
     const deployment = await prisma.deployment.create({ data: { userId: owner.id, repository: "jjiseong/demo", branch: "main", requestedName: "demo", port: 3000, buildPack: "AUTO", idempotencyKey: "ownership-check-1", status: "HEALTHY" } });
     const result = await revealBasicAuth({ id: other.id, githubLogin: other.githubLogin, role: "USER", status: "ACTIVE" }, deployment.id);
-    expect(result).toEqual({ ok: false, error: { code: "NOT_FOUND", message: "Deployment not found." } });
+    expect(result).toEqual({ ok: false, error: { code: "CREDENTIALS_REMOVED", message: "This public service does not use portal credentials." } });
   });
 
   test("does not persist an unsafe Coolify application URL", async () => {
@@ -142,13 +95,9 @@ describe("deployment orchestration", () => {
     const result = await createDeployment({ id: user.id, githubLogin: user.githubLogin, role: "USER", status: "ACTIVE" }, {
       repository: "JJiseong/unsafe-url",
       branch: "main",
-      applicationName: "unsafe-url",
-      port: 3000,
-      buildPack: "AUTO",
       idempotencyKey: "unsafe-url-check-1",
     }, fake as unknown as Parameters<typeof createDeployment>[2]);
-    expect(result.ok).toBe(true);
-    if (result.ok) expect((await prisma.deployment.findUniqueOrThrow({ where: { id: result.data.id } })).url).toBeNull();
+    expect(result).toEqual({ ok: false, error: { code: "GITHUB_NOT_CONNECTED", message: "배포하려면 먼저 GitHub를 연결하세요." } });
   });
 
   test("keeps the previous healthy URL when a newer push deployment fails", async () => {

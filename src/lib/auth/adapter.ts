@@ -4,17 +4,17 @@ import type { Adapter } from "next-auth/adapters";
 import { prisma } from "../db";
 import { encryptSecret } from "../security/crypto";
 
-function encryptProviderAccessToken(token: string): string {
+export function encryptProviderAccessToken(token: string): string {
   const encrypted = encryptSecret(token);
   return ["enc", `v${encrypted.keyVersion}`, encrypted.ciphertext, encrypted.iv, encrypted.authTag].join(":");
 }
 
 export async function persistProviderAccessToken(userId: string, provider: string, accessToken: string | undefined): Promise<void> {
   if (!accessToken?.trim()) return;
-  await prisma.account.updateMany({
-    where: { userId, provider },
-    data: { access_token: encryptProviderAccessToken(accessToken) },
-  });
+  const encrypted = encryptProviderAccessToken(accessToken);
+  const existing = await prisma.account.findFirst({ where: { userId, provider }, select: { id: true } });
+  if (existing) { await prisma.account.update({ where: { id: existing.id }, data: { access_token: encrypted } }); return; }
+  await prisma.account.create({ data: { userId, type: "oauth", provider, providerAccountId: userId, access_token: encrypted } });
 }
 
 export function createPrismaAdapter(): Adapter {

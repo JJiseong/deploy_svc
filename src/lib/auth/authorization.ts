@@ -3,9 +3,11 @@ import { prisma } from "../db";
 
 export type AuthorizedUser = {
   id: string;
+  email?: string | null;
   githubLogin?: string | null;
   role: "ADMIN" | "USER";
   status: "ACTIVE" | "INACTIVE";
+  mustChangePassword?: boolean;
 };
 
 export class AuthorizationError extends Error {
@@ -35,7 +37,7 @@ export function canViewDeployment(user: Pick<AuthorizedUser, "id" | "role">, dep
 }
 
 export async function loadAuthorizedUser(userId: string, client = prisma): Promise<AuthorizedUser> {
-  const user = await client.user.findUnique({ select: { id: true, githubLogin: true, role: true, status: true }, where: { id: userId } });
+  const user = await client.user.findUnique({ select: { id: true, email: true, githubLogin: true, role: true, status: true, mustChangePassword: true }, where: { id: userId } });
   return requireUser(user as AuthorizedUser | null);
 }
 

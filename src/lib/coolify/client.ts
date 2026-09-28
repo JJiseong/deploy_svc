@@ -35,10 +35,11 @@ export type CreateApplicationInput = {
   repository: string;
   branch: string;
   port: number;
-  buildPack: "nixpacks" | "dockerfile";
+  buildPack: "nixpacks" | "dockerfile" | "static";
   tag: string;
-  basicUsername: string;
-  basicPassword: string;
+  /** Deprecated input retained only for source compatibility; never sent. */
+  basicUsername?: string;
+  basicPassword?: string;
 };
 
 export class CoolifyError extends Error {
@@ -111,9 +112,8 @@ export class CoolifyClient {
       is_auto_deploy_enabled: true,
       is_preview_deployments_enabled: false,
       is_force_https_enabled: true,
-      is_http_basic_auth_enabled: true,
-      http_basic_auth_username: input.basicUsername,
-      http_basic_auth_password: input.basicPassword,
+      is_http_basic_auth_enabled: false,
+      noindex_domains: true,
       autogenerate_domain: true,
       tags: [input.tag],
       instant_deploy: false,
@@ -150,6 +150,11 @@ export class CoolifyClient {
   async findApplicationsByTag(tag: string): Promise<CoolifyApplication[]> {
     const schema = z.array(applicationResponseSchema);
     return this.request(`/applications?tag=${encodeURIComponent(tag)}`, {}, this.env.COOLIFY_READ_API_TOKEN, schema, true);
+  }
+
+  async makeApplicationPublic(applicationUuid: string, domains: string | null): Promise<CoolifyApplication> {
+    const body = { is_http_basic_auth_enabled: false, is_force_https_enabled: true, noindex_domains: true, ...(domains ? { domains } : {}) };
+    return this.request(`/applications/${encodeURIComponent(applicationUuid)}`, { method: "PATCH", body: JSON.stringify(body) }, this.env.COOLIFY_WRITE_API_TOKEN, applicationResponseSchema);
   }
 }
 

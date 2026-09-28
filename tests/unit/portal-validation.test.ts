@@ -15,9 +15,6 @@ describe("portal validation", () => {
     const result = deploymentInputSchema.parse({
       repository: "JJiseong/example",
       branch: "main",
-      applicationName: "example-app",
-      port: 3000,
-      buildPack: "AUTO",
       idempotencyKey: "request-1234567890",
     });
 
@@ -29,9 +26,6 @@ describe("portal validation", () => {
       deploymentInputSchema.parse({
         repository: "evil/example",
         branch: "main",
-        applicationName: "example-app",
-        port: 3000,
-        buildPack: "AUTO",
         idempotencyKey: "request-1234567890",
         dockerRunOptions: "--privileged",
       }),
