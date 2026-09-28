@@ -5,10 +5,11 @@ import { prisma } from "../db";
 import { getEnv } from "../env";
 import { writeAuditEvent } from "../audit";
 import { requireUser, type AuthorizedUser } from "../auth/authorization";
-import { deploymentInputSchema, isAllowedRepositoryOwner, type DeploymentInput } from "../validation/portal";
+import { deploymentInputSchema, isAllowedRepositoryOwner } from "../validation/portal";
 import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
-import { encryptSecret, generateBasicPassword, decryptSecret } from "../security/crypto";
 import { consumePersistedRateLimit } from "../security/rate-limit";
+import { getGithubAccessToken } from "../github/account";
+import { analyzeGitHubRepository } from "../github/repositories";
 
 const ACTIVE = new Set<DeploymentStatus>(["REQUESTED", "PROVISIONING", "QUEUED", "IN_PROGRESS"]);
 
@@ -22,6 +23,7 @@ function publicFailure(error: unknown): string {
   if (error instanceof Error && error.message.startsWith("Coolify")) return error.message;
   return "Deployment could not be completed. Try again or contact an administrator.";
 }
+function applicationName(repository: string): string { return repository.split("/").at(-1)?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "web-app"; }
 
 async function recoverApplicationUrl(deployment: Deployment, client: CoolifyClient): Promise<Deployment> {
   if (deployment.url || !deployment.coolifyApplicationId) return deployment;
@@ -51,8 +53,12 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
   const burst = await consumePersistedRateLimit(prisma, { subject: activeUser.id, action: "deployment:create", limit: 3, windowMs: 10 * 60_000 });
   const daily = await consumePersistedRateLimit(prisma, { subject: activeUser.id, action: "deployment:create:daily", limit: 20, windowMs: 24 * 60 * 60_000 });
   if (!burst.allowed || !daily.allowed) return { ok: false, error: { code: "RATE_LIMITED", message: "Deployment limit reached. Try again later." } };
-  const encrypted = encryptSecret(generateBasicPassword());
-  const basicPassword = decryptSecret(encrypted);
+  const [owner, repositoryName] = data.repository.split("/");
+  const token = await getGithubAccessToken(activeUser.id);
+  if (!token) return { ok: false, error: { code: "GITHUB_NOT_CONNECTED", message: "배포하려면 먼저 GitHub를 연결하세요." } };
+  let analysis;
+  try { analysis = await analyzeGitHubRepository(token, owner, repositoryName, data.branch); }
+  catch { return { ok: false, error: { code: "REPOSITORY_ANALYSIS_FAILED", message: "저장소를 자동 분석하지 못했습니다. GitHub 연결을 다시 확인하거나 Dockerfile을 추가해 주세요." } }; }
   let deployment: Awaited<ReturnType<typeof prisma.deployment.create>>;
   try {
     deployment = await prisma.$transaction(async (transaction) => {
@@ -61,16 +67,11 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
           userId: activeUser.id,
           repository: data.repository.toLowerCase(),
           branch: data.branch,
-          requestedName: data.applicationName,
-          port: data.port,
-          buildPack: data.buildPack as BuildPack,
+          requestedName: applicationName(data.repository),
+          port: analysis.port,
+          buildPack: analysis.buildPack as BuildPack,
           status: "REQUESTED",
           idempotencyKey: data.idempotencyKey,
-          basicUsername: "portal-user",
-          basicPasswordCiphertext: encrypted.ciphertext,
-          basicPasswordIv: encrypted.iv,
-          basicPasswordTag: encrypted.authTag,
-          encryptionKeyVersion: encrypted.keyVersion,
         },
       });
       await writeAuditEvent({ actorId: activeUser.id, action: "DEPLOYMENT_REQUESTED", outcome: "SUCCESS", targetType: "Deployment", targetId: created.id, metadata: { repository: created.repository, buildPack: created.buildPack } }, transaction);
@@ -87,14 +88,12 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     let application: CoolifyApplication;
     try {
       application = await client.createApplication({
-        name: `${data.applicationName}-${deployment.id.slice(-6)}`,
+        name: `${applicationName(data.repository)}-${deployment.id.slice(-6)}`,
         repository: data.repository,
         branch: data.branch,
-        port: data.port,
-        buildPack: data.buildPack === "DOCKERFILE" ? "dockerfile" : "nixpacks",
+        port: analysis.port,
+        buildPack: analysis.buildPack === "DOCKERFILE" ? "dockerfile" : analysis.buildPack === "STATIC" ? "static" : "nixpacks",
         tag,
-        basicUsername: "portal-user",
-        basicPassword,
       });
     } catch (createError) {
       const matches = await client.findApplicationsByTag(tag).catch(() => [] as CoolifyApplication[]);
@@ -104,7 +103,7 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     }
     const applicationUuid = application.uuid;
     if (!applicationUuid) throw new Error("Coolify response missing application UUID");
-    await prisma.deployment.update({ where: { id: deployment.id }, data: { coolifyApplicationId: applicationUuid, actualName: application.name ?? data.applicationName, url: safeHttpsUrl(application.fqdn), status: "PROVISIONING" } });
+    await prisma.deployment.update({ where: { id: deployment.id }, data: { coolifyApplicationId: applicationUuid, actualName: application.name ?? applicationName(data.repository), url: safeHttpsUrl(application.fqdn), status: "PROVISIONING" } });
     const started = await client.startDeployment(applicationUuid);
     const startedStatus = started.status ? mapCoolifyStatus(started.status) : "QUEUED";
     await prisma.deployment.update({ where: { id: deployment.id }, data: { latestDeploymentId: started.deployment_uuid ?? started.uuid ?? started.id ?? null, status: startedStatus } });
@@ -116,13 +115,9 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
   return { ok: true, data: result };
 }
 
-export async function revealBasicAuth(user: AuthorizedUser, deploymentId: string): Promise<ActionResult<{ username: string; password: string }>> {
-  const activeUser = requireUser(user);
-  const deployment = await prisma.deployment.findUnique({ where: { id: deploymentId } });
-  if (!deployment || (activeUser.role !== "ADMIN" && deployment.userId !== activeUser.id)) return { ok: false, error: { code: "NOT_FOUND", message: "Deployment not found." } };
-  if (!deployment.basicUsername || !deployment.basicPasswordCiphertext || !deployment.basicPasswordIv || !deployment.basicPasswordTag) return { ok: false, error: { code: "CREDENTIALS_UNAVAILABLE", message: "Credentials are not available." } };
-  await writeAuditEvent({ actorId: activeUser.id, action: "CREDENTIAL_REVEAL", outcome: "SUCCESS", targetType: "Deployment", targetId: deployment.id });
-  return { ok: true, data: { username: deployment.basicUsername, password: decryptSecret({ ciphertext: deployment.basicPasswordCiphertext, iv: deployment.basicPasswordIv, authTag: deployment.basicPasswordTag }) } };
+/** Legacy compatibility only. Public apps no longer have portal credentials. */
+export async function revealBasicAuth(_user: AuthorizedUser, _deploymentId: string): Promise<ActionResult<{ username: string; password: string }>> {
+  return { ok: false, error: { code: "CREDENTIALS_REMOVED", message: "This public service does not use portal credentials." } };
 }
 
 export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId: string, client = new CoolifyClient()) {

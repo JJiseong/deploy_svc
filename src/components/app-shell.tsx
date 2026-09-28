@@ -12,11 +12,11 @@ export function AppShell({ user, children }: { user: AuthorizedUser; children: R
         <Link className="brand" href="/dashboard">배포 포털</Link>
         <NavLinks isAdmin={user.role === "ADMIN"} />
         <details className="account-card account-menu">
-          <summary><span>{user.githubLogin ? `@${user.githubLogin}` : user.role === "ADMIN" ? "관리자" : "사용자"}</span><small>{user.role === "ADMIN" ? "관리자" : "사용자"}</small></summary>
+          <summary><span>{user.email ?? "계정"}</span><small>{user.role === "ADMIN" ? "관리자" : "사용자"}</small></summary>
           <div className="account-menu-content"><small>비공개 작업 공간</small><SignOutButton /></div>
         </details>
       </aside>
-      <main id="main-content" className="content"><MobileNav isAdmin={user.role === "ADMIN"} /><div className="mobile-account"><span>{user.githubLogin ? `@${user.githubLogin}` : user.role === "ADMIN" ? "관리자" : "사용자"}</span><SignOutButton /></div>{children}</main>
+      <main id="main-content" className="content"><MobileNav isAdmin={user.role === "ADMIN"} /><div className="mobile-account"><span>{user.email ?? "계정"}</span><SignOutButton /></div>{children}</main>
     </div>
   );
 }

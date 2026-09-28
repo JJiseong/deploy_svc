@@ -15,6 +15,12 @@ export function normalizeGithubLogin(value: string): string {
 export const roleSchema = z.enum(["ADMIN", "USER"]);
 export const accessGrantStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
+export const emailSchema = z.string().trim().toLowerCase().email("유효한 이메일 주소를 입력하세요.").max(254);
+export const passwordSchema = z.string().min(12, "비밀번호는 12자 이상이어야 합니다.").max(256);
+
+export const memberInputSchema = z.object({ email: emailSchema, role: roleSchema.default("USER") }).strict();
+export const passwordChangeInputSchema = z.object({ currentPassword: z.string().min(1), newPassword: passwordSchema }).strict();
+
 export const accessGrantInputSchema = z
   .object({
     githubLogin: z.string().trim().transform(normalizeGithubLogin),
@@ -31,15 +37,13 @@ export const deploymentInputSchema = z
       .refine((value) => githubLoginPattern.test(value.split("/")[0]), "Invalid repository owner")
       .refine((value) => value.split("/")[1].length <= 100, "Repository name is too long"),
     branch: z.string().trim().min(1).max(255).regex(branchPattern, "Invalid branch"),
-    applicationName: z.string().trim().min(1).max(63).regex(applicationNamePattern, "Invalid application name"),
-    port: z.coerce.number().int().min(1).max(65535),
-    buildPack: z.enum(["AUTO", "NIXPACKS", "DOCKERFILE"]),
     idempotencyKey: z.string().trim().min(12).max(128).regex(/^[A-Za-z0-9._:-]+$/),
   })
   .strict();
 
 export type DeploymentInput = z.infer<typeof deploymentInputSchema>;
 export type AccessGrantInput = z.infer<typeof accessGrantInputSchema>;
+export type MemberInput = z.infer<typeof memberInputSchema>;
 
 export function repositoryOwner(repository: string): string {
   return repository.split("/", 1)[0].toLowerCase();

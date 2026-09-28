@@ -10,7 +10,8 @@ const rawEnvSchema = z.object({
   AUTH_GITHUB_SECRET: requiredString,
   AUTH_URL: z.string().url().optional(),
   AUTH_TRUST_HOST: booleanEnv.default(true),
-  BOOTSTRAP_GITHUB_LOGIN: requiredString,
+  // Retained as optional during the account migration; it is no longer a login policy.
+  BOOTSTRAP_GITHUB_LOGIN: z.string().trim().optional(),
   DATABASE_URL: requiredString.regex(/^file:/, "DATABASE_URL must be a file: SQLite URL"),
   APP_ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, "APP_ENCRYPTION_KEY must be 32-byte hex"),
   ALLOWED_GITHUB_OWNERS: requiredString,

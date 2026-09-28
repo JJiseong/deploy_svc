@@ -59,10 +59,10 @@ function runAuthenticatedAccessibilityAudit(): void {
 
 try {
   const admin = await prisma.user.create({
-    data: { id: adminId, githubId: `route-github-admin-${suffix}`, githubLogin: `route-admin-${suffix}`, role: "ADMIN", status: "ACTIVE" },
+    data: { id: adminId, githubId: `route-github-admin-${suffix}`, githubLogin: `route-admin-${suffix}`, role: "ADMIN", status: "ACTIVE", mustChangePassword: false },
   });
   const member = await prisma.user.create({
-    data: { id: memberId, githubId: `route-github-member-${suffix}`, githubLogin: `route-member-${suffix}`, role: "USER", status: "ACTIVE" },
+    data: { id: memberId, githubId: `route-github-member-${suffix}`, githubLogin: `route-member-${suffix}`, role: "USER", status: "ACTIVE", mustChangePassword: false },
   });
   await prisma.accessGrant.createMany({
     data: [
@@ -118,7 +118,7 @@ try {
 
   const adminUsers = await request("/admin/users", adminToken);
   if (!adminUsers.response.ok) throw new Error(`admin users route returned HTTP ${adminUsers.response.status}`);
-  expectBody("admin users route", adminUsers.body, "사용자 관리");
+  expectBody("admin users route", adminUsers.body, "팀원 관리");
 
   const memberAdmin = await request("/admin/users", memberToken);
   expectBody("member admin route", memberAdmin.body, "접근이 거부되었습니다");
