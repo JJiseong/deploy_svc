@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   })],
   trustHost: process.env.AUTH_TRUST_HOST?.trim().toLowerCase() !== "false",
-  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
+  session: { strategy: "database", maxAge: 60 * 60 * 8 },
   pages: { signIn: "/login" },
   cookies: {
     sessionToken: {
