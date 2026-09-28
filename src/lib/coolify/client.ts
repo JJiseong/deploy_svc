@@ -130,6 +130,10 @@ export class CoolifyClient {
     throw new CoolifyError(502, "Coolify deployment response was invalid");
   }
 
+  async getApplication(applicationUuid: string): Promise<CoolifyApplication> {
+    return this.request(`/applications/${encodeURIComponent(applicationUuid)}`, {}, this.env.COOLIFY_READ_API_TOKEN, applicationResponseSchema, true);
+  }
+
   async getDeployment(deploymentUuid: string): Promise<CoolifyDeployment> {
     return this.request(`/deployments/${encodeURIComponent(deploymentUuid)}`, {}, this.env.COOLIFY_READ_API_TOKEN, deploymentResponseSchema, true);
   }

@@ -164,6 +164,18 @@ describe("deployment orchestration", () => {
     expect(failureEvents).toHaveLength(1);
   });
 
+  test("recovers a generated domain omitted from the create response", async () => {
+    const owner = await prisma.user.create({ data: { githubId: "github-domain-recovery", githubLogin: "domain-recovery", role: "USER", status: "ACTIVE" } });
+    const deployment = await prisma.deployment.create({ data: { userId: owner.id, repository: "jjiseong/tetris", branch: "main", requestedName: "tetris", port: 3000, buildPack: "AUTO", idempotencyKey: "domain-recovery-1", status: "HEALTHY", coolifyApplicationId: "app-tetris", latestDeploymentId: "deployment-tetris" } });
+    const client = {
+      listApplicationDeployments: async () => [],
+      getApplication: async () => ({ uuid: "app-tetris", fqdn: "https://tetris.example.test" }),
+    } as unknown as Parameters<typeof refreshDeploymentStatus>[2];
+    const result = await refreshDeploymentStatus({ id: owner.id, githubLogin: owner.githubLogin, role: "USER", status: "ACTIVE" }, deployment.id, client);
+    expect(result?.status).toBe("HEALTHY");
+    expect(result?.url).toBe("https://tetris.example.test/");
+  });
+
   test("falls back to application deployment list when single deployment lookup is unavailable", async () => {
     const owner = await prisma.user.create({ data: { githubId: "github-list-fallback", githubLogin: "list-fallback-owner", role: "USER", status: "ACTIVE" } });
     const deployment = await prisma.deployment.create({ data: { userId: owner.id, repository: "jjiseong/demo", branch: "main", requestedName: "demo", port: 3000, buildPack: "AUTO", idempotencyKey: "list-fallback-1", status: "IN_PROGRESS", coolifyApplicationId: "app-list-fallback", latestDeploymentId: "deployment-list-fallback" } });
