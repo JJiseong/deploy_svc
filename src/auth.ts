@@ -23,7 +23,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   })],
   trustHost: process.env.AUTH_TRUST_HOST?.trim().toLowerCase() !== "false",
-  session: { strategy: "database", maxAge: 60 * 60 * 8 },
+  // Auth.js Credentials provider requires JWT sessions. Authorization still
+  // reloads the user from Prisma on every request, so role/status changes take
+  // effect without relying on a database session row.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
   pages: { signIn: "/login" },
   cookies: {
     sessionToken: {
@@ -32,9 +35,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
-    async session({ session, user }) {
-      const databaseUser = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true, status: true, mustChangePassword: true } });
-      session.user.id = databaseUser?.id ?? user.id;
+    async jwt({ token, user }) {
+      if (user?.id) token.sub = user.id;
+      return token;
+    },
+    async session({ session, user, token }) {
+      const userId = user?.id ?? token.sub;
+      if (!userId) return session;
+      const databaseUser = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, status: true, mustChangePassword: true } });
+      session.user.id = databaseUser?.id ?? userId;
       session.user.role = databaseUser?.role ?? "USER";
       session.user.status = databaseUser?.status ?? "INACTIVE";
       session.user.mustChangePassword = databaseUser?.mustChangePassword ?? true;

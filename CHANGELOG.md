@@ -6,6 +6,7 @@
 - **[2026-09-28]**: feat: simplify deployment to repository and version selection, automatically analyze Dockerfile, Node, and static HTML projects, and create public HTTPS/noindex Coolify applications without Basic Auth.
 - **[2026-09-28]**: security: add an idempotent administrator migration service that removes existing app Basic Auth and clears legacy encrypted credentials after a successful public conversion.
 - **[2026-09-28]**: fix: send Coolify noindex domains using the current array contract, reconcile generated domains after app creation, and update the Korean guide for email login and public services.
+- **[2026-09-28]**: fix: use JWT sessions for Auth.js credentials login so administrator email accounts can sign in.
 
 - Accept Coolify deployment responses with numeric IDs and wrapped application deployment lists.
 - Keep generated Coolify basic-auth passwords within the upstream database column limit after Coolify encrypts them.
