@@ -5,6 +5,7 @@
 - Accept Coolify deployment responses with numeric IDs and wrapped application deployment lists.
 - Keep generated Coolify basic-auth passwords within the upstream database column limit after Coolify encrypts them.
 - Fall back to application deployment history when Coolify cannot resolve a deployment by UUID.
+- Recover an application's generated HTTPS domain when Coolify omits it from the initial create or deployment response.
 
 All notable changes to this project will be documented in this file.
 

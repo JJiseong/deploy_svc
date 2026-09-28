@@ -71,6 +71,18 @@ describe("Coolify contracts", () => {
     expect(body.git_repository).toBe("https://github.com/JJiseong/demo");
   });
 
+  test("reads an application domain with the read-only token", async () => {
+    let request: Request | undefined;
+    const client = new CoolifyClient(env, async (input, init) => {
+      request = new Request(input, init);
+      return new Response(JSON.stringify({ uuid: "app-1", fqdn: "https://tetris.example.com" }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    const result = await client.getApplication("app-1");
+    expect(result.fqdn).toBe("https://tetris.example.com");
+    expect(new URL(request!.url).pathname).toBe("/api/v1/applications/app-1");
+    expect(request!.headers.get("authorization")).toBe("Bearer read");
+  });
+
   test("normalizes the deploy response wrapper", async () => {
     const client = new CoolifyClient(env, async () => new Response(JSON.stringify({ deployments: [{ deployment_uuid: "dep-1", status: "queued" }] }), { status: 200, headers: { "content-type": "application/json" } }));
     const result = await client.startDeployment("app-1");

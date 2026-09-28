@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { Prisma, type BuildPack, type DeploymentStatus } from "@prisma/client";
+import { Prisma, type BuildPack, type Deployment, type DeploymentStatus } from "@prisma/client";
 import { prisma } from "../db";
 import { getEnv } from "../env";
 import { writeAuditEvent } from "../audit";
@@ -21,6 +21,19 @@ export function portalTag(userId: string, idempotencyKey: string): string {
 function publicFailure(error: unknown): string {
   if (error instanceof Error && error.message.startsWith("Coolify")) return error.message;
   return "Deployment could not be completed. Try again or contact an administrator.";
+}
+
+async function recoverApplicationUrl(deployment: Deployment, client: CoolifyClient): Promise<Deployment> {
+  if (deployment.url || !deployment.coolifyApplicationId) return deployment;
+  try {
+    const application = await client.getApplication(deployment.coolifyApplicationId);
+    const url = safeHttpsUrl(application.fqdn);
+    if (!url) return deployment;
+    return prisma.deployment.update({ where: { id: deployment.id }, data: { url } });
+  } catch {
+    // A missing read endpoint must not turn a healthy application into a failed one.
+    return deployment;
+  }
 }
 
 export async function createDeployment(user: AuthorizedUser, input: unknown, client = new CoolifyClient()): Promise<ActionResult<{ id: string; status: DeploymentStatus }>> {
@@ -124,13 +137,13 @@ export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId
       .filter((item) => typeof item.uuid === "string" || typeof item.id === "string")
       .sort((left, right) => String(right.created_at ?? right.createdAt ?? "").localeCompare(String(left.created_at ?? left.createdAt ?? "")))[0];
     const newestId = newest?.uuid ?? newest?.id;
-    if (!newestId || newestId === deployment.latestDeploymentId) return deployment;
+    if (!newestId || newestId === deployment.latestDeploymentId) return recoverApplicationUrl(deployment, client);
     const status = mapCoolifyStatus(newest.status);
     const updated = await prisma.deployment.update({ where: { id: deployment.id }, data: { latestDeploymentId: newestId, status, lastPolledAt: new Date(), failureSummary: status === "FAILED" ? "The latest deployment failed. Review the repository build and try again." : null } });
     if (status === "FAILED" && deployment.status !== "FAILED") {
       await writeAuditEvent({ actorId: activeUser.id, action: "DEPLOYMENT_FAILURE", outcome: "FAILURE", targetType: "Deployment", targetId: deployment.id, metadata: { reason: "latest_deployment_failed" } });
     }
-    return updated;
+    return recoverApplicationUrl(updated, client);
   }
   if (deployment.lastPolledAt && Date.now() - deployment.lastPolledAt.getTime() < 3_000) return deployment;
   let current: CoolifyDeployment;
@@ -153,7 +166,7 @@ export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId
   if (status === "FAILED" && deployment.status !== "FAILED") {
     await writeAuditEvent({ actorId: activeUser.id, action: "DEPLOYMENT_FAILURE", outcome: "FAILURE", targetType: "Deployment", targetId: deployment.id, metadata: { reason: "deployment_status_failed" } });
   }
-  return updated;
+  return recoverApplicationUrl(updated, client);
 }
 
 export function isActiveDeployment(status: DeploymentStatus): boolean {
