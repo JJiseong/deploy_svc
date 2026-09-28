@@ -68,10 +68,23 @@ describe("Coolify contracts", () => {
     expect(body.is_preview_deployments_enabled).toBe(false);
     expect(body.is_force_https_enabled).toBe(true);
     expect(body.is_http_basic_auth_enabled).toBe(false);
-    expect(body.noindex_domains).toBe(true);
+    expect(body.noindex_domains).toEqual([]);
     expect(body).not.toHaveProperty("http_basic_auth_password");
     expect(body.tags).toEqual(["tag-1"]);
     expect(body.git_repository).toBe("https://github.com/JJiseong/demo");
+  });
+
+  test("sends the generated domain as the noindex entry when making an app public", async () => {
+    let request: Request | undefined;
+    const client = new CoolifyClient(env, async (input, init) => {
+      request = new Request(input, init);
+      return new Response(JSON.stringify({ uuid: "app-public", fqdn: "https://tetris.example.com" }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    await client.makeApplicationPublic("app-public", "https://tetris.example.com");
+    const body = JSON.parse(await request!.text()) as Record<string, unknown>;
+    expect(body.noindex_domains).toEqual(["https://tetris.example.com"]);
+    expect(body.is_http_basic_auth_enabled).toBe(false);
+    expect(body.is_force_https_enabled).toBe(true);
   });
 
   test("reads an application domain with the read-only token", async () => {

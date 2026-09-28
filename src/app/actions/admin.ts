@@ -13,7 +13,7 @@ export async function addMember(input: unknown) {
     revalidatePath("/admin/users");
     return { ok: true as const, data: result };
   } catch (error) {
-    return { ok: false as const, error: { code: "ADMIN_MUTATION_FAILED", message: error instanceof Error && error.message.includes("Unique") ? "이 GitHub 로그인은 이미 허용되어 있습니다." : "접근 권한을 업데이트할 수 없습니다." } };
+    return { ok: false as const, error: { code: "ADMIN_MUTATION_FAILED", message: error instanceof Error && error.message.includes("Unique") ? "이 이메일 계정은 이미 등록되어 있습니다." : "계정 권한을 업데이트할 수 없습니다." } };
   }
 }
 export async function changeMemberRole(memberId: string, role: unknown) {
