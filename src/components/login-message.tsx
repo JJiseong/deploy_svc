@@ -3,15 +3,13 @@
 import { useSearchParams } from "next/navigation";
 
 const messages: Record<string, string> = {
-  AccessDenied: "이 GitHub 계정에는 접근 권한이 없습니다. 관리자에게 문의하세요.",
-  Configuration: "GitHub 로그인을 사용할 수 없습니다. 다시 시도하세요.",
-  OAuthSignin: "GitHub 로그인을 사용할 수 없습니다. 다시 시도하세요.",
-  OAuthCallback: "GitHub 로그인을 사용할 수 없습니다. 다시 시도하세요.",
-  Callback: "GitHub 로그인을 사용할 수 없습니다. 다시 시도하세요.",
+  CredentialsSignin: "이메일 또는 비밀번호를 확인하세요.",
+  AccessDenied: "이 계정은 사용할 수 없습니다. 관리자에게 문의하세요.",
+  Configuration: "로그인 설정을 확인할 수 없습니다. 관리자에게 문의하세요.",
 };
 
 export function LoginMessage() {
   const error = useSearchParams().get("error");
   if (!error) return null;
-  return <div className="alert error" role="alert"><p>{messages[error] ?? "GitHub 로그인을 사용할 수 없습니다. 다시 시도하세요."}</p><a className="button secondary" href="/login">다시 시도</a></div>;
+  return <div className="alert error" role="alert"><p>{messages[error] ?? "로그인에 실패했습니다. 다시 시도하세요."}</p><a className="button secondary" href="/login">다시 시도</a></div>;
 }

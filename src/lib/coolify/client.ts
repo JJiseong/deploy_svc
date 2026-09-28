@@ -113,7 +113,10 @@ export class CoolifyClient {
       is_preview_deployments_enabled: false,
       is_force_https_enabled: true,
       is_http_basic_auth_enabled: false,
-      noindex_domains: true,
+      // Coolify expects an array here. The generated domain is not known
+      // until the application is created, so the deployment flow reconciles
+      // the final fqdn immediately afterward.
+      noindex_domains: [],
       autogenerate_domain: true,
       tags: [input.tag],
       instant_deploy: false,
@@ -153,7 +156,12 @@ export class CoolifyClient {
   }
 
   async makeApplicationPublic(applicationUuid: string, domains: string | null): Promise<CoolifyApplication> {
-    const body = { is_http_basic_auth_enabled: false, is_force_https_enabled: true, noindex_domains: true, ...(domains ? { domains } : {}) };
+    const body = {
+      is_http_basic_auth_enabled: false,
+      is_force_https_enabled: true,
+      noindex_domains: domains ? [domains] : [],
+      ...(domains ? { domains } : {}),
+    };
     return this.request(`/applications/${encodeURIComponent(applicationUuid)}`, { method: "PATCH", body: JSON.stringify(body) }, this.env.COOLIFY_WRITE_API_TOKEN, applicationResponseSchema);
   }
 }

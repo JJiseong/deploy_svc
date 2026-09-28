@@ -103,6 +103,14 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     }
     const applicationUuid = application.uuid;
     if (!applicationUuid) throw new Error("Coolify response missing application UUID");
+    // Coolify cannot know the generated domain at create time. Once it is
+    // returned, reconcile the public settings so every new app receives the
+    // noindex rule and has Basic Auth disabled before deployment starts.
+    const generatedDomain = safeHttpsUrl(application.fqdn);
+    if (generatedDomain && typeof client.makeApplicationPublic === "function") {
+      const configured = await client.makeApplicationPublic(applicationUuid, generatedDomain);
+      application = { ...application, ...configured, fqdn: safeHttpsUrl(configured.fqdn) ?? generatedDomain };
+    }
     await prisma.deployment.update({ where: { id: deployment.id }, data: { coolifyApplicationId: applicationUuid, actualName: application.name ?? applicationName(data.repository), url: safeHttpsUrl(application.fqdn), status: "PROVISIONING" } });
     const started = await client.startDeployment(applicationUuid);
     const startedStatus = started.status ? mapCoolifyStatus(started.status) : "QUEUED";
