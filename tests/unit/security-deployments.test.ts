@@ -85,6 +85,19 @@ describe("Coolify contracts", () => {
     expect(mapCoolifyStatus(result.status)).toBe("UNKNOWN");
   });
 
+  test("normalizes numeric deployment ids returned by Coolify", async () => {
+    const client = new CoolifyClient(env, async () => new Response(JSON.stringify({ id: 37, deployment_uuid: "dep-37", status: "finished" }), { status: 200, headers: { "content-type": "application/json" } }));
+    const result = await client.getDeployment("dep-37");
+    expect(result.id).toBe("37");
+    expect(result.status).toBe("finished");
+  });
+
+  test("accepts the Coolify deployment list wrapper", async () => {
+    const client = new CoolifyClient(env, async () => new Response(JSON.stringify({ count: 1, deployments: [{ id: 41, deployment_uuid: "dep-41", status: "failed" }] }), { status: 200, headers: { "content-type": "application/json" } }));
+    const result = await client.listApplicationDeployments("app-1");
+    expect(result).toEqual([{ id: "41", deployment_uuid: "dep-41", status: "failed" }]);
+  });
+
   test("rejects a deploy response without a deployment identifier", async () => {
     const client = new CoolifyClient(env, async () => new Response(JSON.stringify({ deployments: [{}] }), { status: 200, headers: { "content-type": "application/json" } }));
     await expect(client.startDeployment("app-1")).rejects.toThrow("invalid");

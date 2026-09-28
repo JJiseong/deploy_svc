@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Accept Coolify deployment responses with numeric IDs and wrapped application deployment lists.
 - Keep generated Coolify basic-auth passwords within the upstream database column limit after Coolify encrypts them.
 - Fall back to application deployment history when Coolify cannot resolve a deployment by UUID.
 

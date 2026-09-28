@@ -3,9 +3,10 @@ import { z } from "zod";
 import { getEnv, type PortalEnv } from "../env";
 
 const responseSchema = z.object({}).passthrough();
+const deploymentIdentifierSchema = z.union([z.string(), z.number().finite()]).transform(String);
 const deploymentResponseSchema = responseSchema.extend({
   uuid: z.string().optional(),
-  id: z.string().optional(),
+  id: deploymentIdentifierSchema.optional(),
   status: z.string().optional(),
   deployment_uuid: z.string().optional(),
   deployment_url: z.string().optional(),
@@ -134,7 +135,11 @@ export class CoolifyClient {
   }
 
   async listApplicationDeployments(applicationUuid: string): Promise<CoolifyDeployment[]> {
-    const schema = z.array(deploymentResponseSchema);
+    const deployments = z.array(deploymentResponseSchema);
+    const schema = z.union([
+      deployments,
+      z.object({ deployments }).passthrough().transform((value) => value.deployments),
+    ]);
     return this.request(`/deployments/applications/${encodeURIComponent(applicationUuid)}`, {}, this.env.COOLIFY_READ_API_TOKEN, schema, true);
   }
 
