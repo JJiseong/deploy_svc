@@ -34,13 +34,13 @@ export function GitHubConnection({ login, notice }: { login?: string | null; not
   return <section className="card" aria-labelledby="github-connection-heading">
     <p className="eyebrow">GitHub 연결</p>
     <h2 id="github-connection-heading">{connected ? `연결됨 · @${login}` : "GitHub를 연결하세요"}</h2>
-    <p className="muted">{connected ? "저장소 목록을 불러오고 배포할 때만 GitHub를 사용합니다." : "저장소와 버전 목록을 불러오려면 GitHub 연결이 필요합니다."}</p>
+    <p className="muted">{connected ? "저장소 목록을 불러오고 배포할 때만 GitHub를 사용합니다. 다른 계정으로 바꿀 때는 연결을 해제한 뒤 다시 연결하세요." : "저장소와 버전 목록을 불러오려면 GitHub 연결이 필요합니다."}</p>
     {notice && <p className={notice === "connected" ? "alert success" : "alert error"} role="status">{noticeMessages[notice]}</p>}
     {message && <p className="muted" role="status">{message}</p>}
     <div className="button-row">
       <a className="button primary" href="/api/github/connect">{connected ? "GitHub 다시 연결" : "GitHub 연결"}</a>
       {connected && <button className="button secondary" type="button" onClick={() => void disconnect()} disabled={pending}>{pending ? "연결 해제 중…" : "연결 해제"}</button>}
     </div>
-    {connected && <small className="muted">다른 GitHub 계정을 사용하려면 먼저 연결을 해제한 뒤 다시 연결하세요.</small>}
+    {connected && <small className="muted">다시 연결하면 GitHub에서 계정 선택 화면이 표시됩니다.</small>}
   </section>;
 }
