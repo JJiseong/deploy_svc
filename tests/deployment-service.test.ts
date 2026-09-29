@@ -118,7 +118,7 @@ describe("deployment orchestration", () => {
     const deployment = await prisma.deployment.create({ data: { userId: owner.id, repository: "jjiseong/tetris", branch: "main", requestedName: "tetris", port: 3000, buildPack: "AUTO", idempotencyKey: "domain-recovery-1", status: "HEALTHY", coolifyApplicationId: "app-tetris", latestDeploymentId: "deployment-tetris" } });
     const client = {
       listApplicationDeployments: async () => [],
-      getApplication: async () => ({ uuid: "app-tetris", fqdn: "https://tetris.example.test" }),
+      getApplication: async () => ({ uuid: "app-tetris", fqdn: "http://tetris.example.test" }),
     } as unknown as Parameters<typeof refreshDeploymentStatus>[2];
     const result = await refreshDeploymentStatus({ id: owner.id, githubLogin: owner.githubLogin, role: "USER", status: "ACTIVE" }, deployment.id, client);
     expect(result?.status).toBe("HEALTHY");

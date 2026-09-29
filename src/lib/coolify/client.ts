@@ -30,6 +30,26 @@ export function safeHttpsUrl(value: unknown): string | null {
   }
 }
 
+/**
+ * Normalize a URL returned by Coolify for a public application.
+ *
+ * Coolify can report generated sslip.io domains with an `http` scheme even
+ * when force-HTTPS is enabled. The portal only publishes HTTPS links, so we
+ * upgrade that upstream scheme after applying the same credential checks as
+ * the strict HTTPS boundary above.
+ */
+export function safePublicHttpsUrl(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return null;
+    url.protocol = "https:";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export type CreateApplicationInput = {
   name: string;
   repository: string;
