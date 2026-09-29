@@ -4,6 +4,7 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-09-29](2026-09-29.md) | chore: update |
 | [2026-09-28](2026-09-28.md) | --help |
 | [2026-09-27](2026-09-27.md) | feat: add GitHub repository discovery to deployment flow |
 | [2026-09-26](2026-09-26.md) | fix: bind GitHub users after Auth.js persistence |

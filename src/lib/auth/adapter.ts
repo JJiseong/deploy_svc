@@ -1,6 +1,7 @@
 import "server-only";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter } from "next-auth/adapters";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { encryptSecret } from "../security/crypto";
 
@@ -9,12 +10,12 @@ export function encryptProviderAccessToken(token: string): string {
   return ["enc", `v${encrypted.keyVersion}`, encrypted.ciphertext, encrypted.iv, encrypted.authTag].join(":");
 }
 
-export async function persistProviderAccessToken(userId: string, provider: string, accessToken: string | undefined): Promise<void> {
+export async function persistProviderAccessToken(userId: string, provider: string, accessToken: string | undefined, client: Pick<Prisma.TransactionClient, "account"> = prisma): Promise<void> {
   if (!accessToken?.trim()) return;
   const encrypted = encryptProviderAccessToken(accessToken);
-  const existing = await prisma.account.findFirst({ where: { userId, provider }, select: { id: true } });
-  if (existing) { await prisma.account.update({ where: { id: existing.id }, data: { access_token: encrypted } }); return; }
-  await prisma.account.create({ data: { userId, type: "oauth", provider, providerAccountId: userId, access_token: encrypted } });
+  const existing = await client.account.findFirst({ where: { userId, provider }, select: { id: true } });
+  if (existing) { await client.account.update({ where: { id: existing.id }, data: { access_token: encrypted } }); return; }
+  await client.account.create({ data: { userId, type: "oauth", provider, providerAccountId: userId, access_token: encrypted } });
 }
 
 export function createPrismaAdapter(): Adapter {

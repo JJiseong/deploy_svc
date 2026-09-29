@@ -21,10 +21,18 @@ export async function GET(request: Request) {
   const profileResponse = await fetch("https://api.github.com/user", { headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}`, "User-Agent": "deploy-svc-portal" } });
   const profile = await profileResponse.json() as { id?: number; login?: string; name?: string; avatar_url?: string };
   if (!profileResponse.ok || !profile.id || !profile.login) return finish("/dashboard?github=failed");
+  const githubLogin = profile.login.toLowerCase();
+  const conflictingUser = await prisma.user.findFirst({ where: { NOT: { id: user.id }, OR: [{ githubId: String(profile.id) }, { githubLogin }] }, select: { id: true } });
+  if (conflictingUser) {
+    await writeAuditEvent({ actorId: user.id, action: "GITHUB_CONNECT", outcome: "DENIED", metadata: { githubLogin, reason: "already_connected" } });
+    return finish("/dashboard?github=conflict");
+  }
   try {
-    await prisma.user.update({ where: { id: user.id }, data: { githubId: String(profile.id), githubLogin: profile.login.toLowerCase(), name: profile.name ?? undefined, image: profile.avatar_url ?? undefined } });
-    await persistProviderAccessToken(user.id, "github", token);
-    await writeAuditEvent({ actorId: user.id, action: "GITHUB_CONNECT", outcome: "SUCCESS", metadata: { githubLogin: profile.login.toLowerCase() } });
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: user.id }, data: { githubId: String(profile.id), githubLogin, name: profile.name ?? undefined, image: profile.avatar_url ?? undefined } });
+      await persistProviderAccessToken(user.id, "github", token, tx);
+      await writeAuditEvent({ actorId: user.id, action: "GITHUB_CONNECT", outcome: "SUCCESS", metadata: { githubLogin } }, tx);
+    });
     return finish("/dashboard?github=connected");
   } catch { return finish("/dashboard?github=failed"); }
 }
