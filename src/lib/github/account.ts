@@ -20,3 +20,10 @@ export async function getGithubAccessToken(userId: string): Promise<string | nul
   const encrypted = account?.access_token?.trim();
   return encrypted ? decryptProviderAccessToken(encrypted) : null;
 }
+
+export async function clearGithubConnection(userId: string): Promise<void> {
+  await prisma.$transaction([
+    prisma.account.deleteMany({ where: { userId, provider: "github" } }),
+    prisma.user.update({ where: { id: userId }, data: { githubId: null, githubLogin: null, image: null } }),
+  ]);
+}

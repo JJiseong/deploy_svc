@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-09-29]**: feat: add GitHub reconnection and disconnect controls, expired-token recovery guidance, and protection against binding one GitHub account to multiple portal users.
 - **[2026-09-28]**: feat: switch portal access to administrator-issued email/password accounts, require a first-login password change, and keep GitHub OAuth only for repository connection.
 - **[2026-09-28]**: feat: simplify deployment to repository and version selection, automatically analyze Dockerfile, Node, and static HTML projects, and create public HTTPS/noindex Coolify applications without Basic Auth.
 - **[2026-09-28]**: security: add an idempotent administrator migration service that removes existing app Basic Auth and clears legacy encrypted credentials after a successful public conversion.

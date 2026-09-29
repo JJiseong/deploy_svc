@@ -22,7 +22,7 @@ const { prisma, checkDatabaseReady } = await import("../src/lib/db");
 const { bindGithubUser, isGithubLoginAllowed } = await import("../src/lib/auth/access");
 const { createAccessGrant, updateAccessGrantRole, setAccessGrantStatus } = await import("../src/lib/auth/grants");
 const { createPrismaAdapter, persistProviderAccessToken } = await import("../src/lib/auth/adapter");
-const { getGithubAccessToken } = await import("../src/lib/github/account");
+const { clearGithubConnection, getGithubAccessToken } = await import("../src/lib/github/account");
 
 beforeAll(() => {
   const result = spawnSync("./node_modules/.bin/prisma", ["migrate", "deploy", "--schema", "prisma/schema.prisma"], { env: { ...process.env, RUST_LOG: "info" }, stdio: "ignore" });
@@ -132,6 +132,18 @@ describe("SQLite integration", () => {
     expect(loaded?.user.id).toBe(user.id);
     await adapter.deleteSession!(session.sessionToken);
     expect(await prisma.session.findUnique({ where: { sessionToken: session.sessionToken } })).toBeNull();
+    await prisma.user.delete({ where: { id: user.id } });
+  });
+
+  test("disconnects GitHub identity and removes the stored provider token", async () => {
+    const user = await prisma.user.create({ data: { email: "disconnect@example.test", githubId: "github-disconnect", githubLogin: "disconnect-user", role: "USER", status: "ACTIVE" } });
+    await persistProviderAccessToken(user.id, "github", "provider-token-to-remove");
+
+    await clearGithubConnection(user.id);
+
+    const disconnected = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { githubId: true, githubLogin: true, image: true } });
+    expect(disconnected).toEqual({ githubId: null, githubLogin: null, image: null });
+    expect(await prisma.account.findFirst({ where: { userId: user.id, provider: "github" } })).toBeNull();
     await prisma.user.delete({ where: { id: user.id } });
   });
 });
