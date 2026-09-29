@@ -16,7 +16,7 @@ export default async function GuidePage() {
         <h2 id="guide-start-heading">빠른 시작</h2>
         <ol className="guide-steps">
           <li><strong>이메일로 로그인</strong><span>관리자에게 받은 이메일과 임시 비밀번호로 로그인하고, 첫 로그인에서 새 비밀번호를 설정합니다.</span></li>
-          <li><strong>GitHub 연결</strong><span>처음 배포할 때만 GitHub를 연결합니다. 포털 로그인과는 별개입니다.</span></li>
+          <li><strong>GitHub 연결</strong><span>처음 배포할 때 GitHub를 연결합니다. 연결이 만료되거나 다른 계정을 사용하려면 대시보드에서 다시 연결할 수 있습니다.</span></li>
           <li><strong>저장소 선택</strong><span>저장소를 검색해 선택하면 기본 브랜치가 자동으로 선택됩니다.</span></li>
           <li><strong>버전 선택 후 배포</strong><span>필요할 때만 다른 브랜치나 태그를 고르고 <em>배포 시작</em>을 누릅니다.</span></li>
           <li><strong>상태 확인</strong><span>배포 상세 화면에서 상태가 정상으로 바뀌는지 확인합니다.</span></li>
@@ -45,6 +45,11 @@ export default async function GuidePage() {
         <h2 id="guide-public-heading">공개 서비스</h2>
         <p>새로 배포된 서비스는 공개 HTTPS 주소로 열립니다. 링크를 아는 사람은 이용할 수 있지만 검색엔진에는 노출되지 않습니다.</p>
         <p className="muted">기술적인 값과 배포 식별자는 상세 화면의 <em>배포 정보</em>에서 확인할 수 있습니다.</p>
+      </section>
+      <section className="card" aria-labelledby="guide-github-reconnect-heading">
+        <h2 id="guide-github-reconnect-heading">GitHub 연결 문제 해결</h2>
+        <p>저장소 목록을 불러올 수 없거나 연결이 만료되었다는 안내가 나오면 <em>GitHub 다시 연결</em>을 누르세요. 다른 GitHub 계정을 사용하려면 먼저 <em>연결 해제</em>를 누른 뒤 새 계정으로 연결합니다.</p>
+        <p className="muted">포털 이메일·비밀번호와 GitHub 연결은 서로 별개입니다. GitHub 연결을 해제해도 기존 배포 기록은 유지됩니다.</p>
       </section>
       {user.role === "ADMIN" && <section className="card" aria-labelledby="guide-admin-heading">
         <h2 id="guide-admin-heading">관리자 기능</h2>
