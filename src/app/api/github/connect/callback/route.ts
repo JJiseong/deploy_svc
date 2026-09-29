@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
 import { persistProviderAccessToken } from "@/lib/auth/adapter";
 import { writeAuditEvent } from "@/lib/audit";
+import { portalRedirectUrl } from "@/lib/auth/portal-redirect";
 
 const cookieName = "portal.github-connect";
 function signature(value: string) { return createHmac("sha256", process.env.AUTH_SECRET ?? "").update(value).digest("base64url"); }
@@ -13,7 +14,7 @@ function same(a: string, b: string) { const x = Buffer.from(a); const y = Buffer
 export async function GET(request: Request) {
   const user = await getCurrentUser(); const url = new URL(request.url); const code = url.searchParams.get("code"); const state = url.searchParams.get("state");
   const saved = (await cookies()).get(cookieName)?.value ?? ""; const [userId, savedState, savedSignature] = saved.split(".");
-  const finish = (path: string) => { const response = NextResponse.redirect(new URL(path, request.url)); response.cookies.delete(cookieName); return response; };
+  const finish = (path: string) => { const response = NextResponse.redirect(portalRedirectUrl(path, request.url, process.env.AUTH_URL)); response.cookies.delete(cookieName); return response; };
   if (!user || !code || !state || user.id !== userId || state !== savedState || !savedSignature || !same(signature(`${userId}.${savedState}`), savedSignature)) return finish("/dashboard?github=failed");
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify({ client_id: process.env.AUTH_GITHUB_ID, client_secret: process.env.AUTH_GITHUB_SECRET, code }) });
   const token = (await tokenResponse.json() as { access_token?: string }).access_token;

@@ -67,6 +67,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fix GitHub OAuth callback redirects behind the Coolify reverse proxy so reconnects return to the public portal URL.
+
 ### Added
 - **[2026-09-22]**: `k-kosis` skill (Korean Statistical Information Service / KOSIS OpenAPI) — promoted from `co-pitch/skills/k-kosis`, registered in `skills/SKILLS.md` (scope: common, l2_propagate).
 
