@@ -48,7 +48,7 @@ export default async function GuidePage() {
       </section>
       <section className="card" aria-labelledby="guide-github-reconnect-heading">
         <h2 id="guide-github-reconnect-heading">GitHub 연결 문제 해결</h2>
-        <p>저장소 목록을 불러올 수 없거나 연결이 만료되었다는 안내가 나오면 <em>GitHub 다시 연결</em>을 누르세요. 다른 GitHub 계정을 사용하려면 먼저 <em>연결 해제</em>를 누른 뒤 새 계정으로 연결합니다.</p>
+        <p>저장소 목록을 불러올 수 없거나 연결이 만료되었다는 안내가 나오면 <em>GitHub 다시 연결</em>을 누르세요. 다른 GitHub 계정을 사용하려면 먼저 <em>연결 해제</em>를 누른 뒤 다시 연결하면 GitHub의 계정 선택 화면에서 계정을 고를 수 있습니다.</p>
         <p className="muted">포털 이메일·비밀번호와 GitHub 연결은 서로 별개입니다. GitHub 연결을 해제해도 기존 배포 기록은 유지됩니다.</p>
       </section>
       {user.role === "ADMIN" && <section className="card" aria-labelledby="guide-admin-heading">
