@@ -91,6 +91,11 @@ export function DeploymentStatus({ id, initial }: { id: string; initial: Deploym
   }, [refresh, state.status, retryUntil]);
 
   useEffect(() => {
+    if (state.url || activeStates.has(state.status)) return;
+    void refresh();
+  }, [refresh, state.status, state.url]);
+
+  useEffect(() => {
     if (!retryUntil) return;
     const timer = window.setInterval(() => {
       const remaining = Math.max(0, Math.ceil((retryUntil - Date.now()) / 1000));
@@ -110,7 +115,7 @@ export function DeploymentStatus({ id, initial }: { id: string; initial: Deploym
       return null;
     }
   })();
-  const statusCopy = state.status === "HEALTHY" ? "애플리케이션을 사용할 수 있습니다." : state.status === "FAILED" ? state.failureSummary ?? "배포에 실패했습니다. 저장소의 빌드 설정을 확인한 후 다시 시도하세요." : state.status === "CANCELLED" ? "배포가 완료되지 않았습니다." : state.status === "UNKNOWN" ? "포털에서 현재 상태를 확인할 수 없습니다." : "애플리케이션을 빌드하고 있습니다. 상태가 자동으로 갱신됩니다.";
+  const statusCopy = state.status === "HEALTHY" ? applicationUrl ? "애플리케이션을 사용할 수 있습니다." : "배포는 완료됐습니다. 공개 주소를 확인하는 중입니다." : state.status === "FAILED" ? state.failureSummary ?? "배포에 실패했습니다. 저장소의 빌드 설정을 확인한 후 다시 시도하세요." : state.status === "CANCELLED" ? "배포가 완료되지 않았습니다." : state.status === "UNKNOWN" ? "포털에서 현재 상태를 확인할 수 없습니다." : "애플리케이션을 빌드하고 있습니다. 상태가 자동으로 갱신됩니다.";
 
   return <div className="status-panel-content">
     <div className="status-line"><StatusBadge status={state.status} /><button type="button" className="button secondary" onClick={() => void refresh()} disabled={disabled}>{checking ? "확인 중…" : retrySeconds > 0 ? `${retrySeconds}초 후 다시 시도` : "상태 새로고침"}</button></div>

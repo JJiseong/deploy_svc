@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-09-29]**: fix: recover Coolify HTTP-reported generated domains as safe public HTTPS links and automatically refresh missing URLs on completed deployment pages.
 - **[2026-09-29]**: docs: explain GitHub token-expiry recovery and switching to another connected account.
 - **[2026-09-29]**: feat: add GitHub reconnection and disconnect controls, expired-token recovery guidance, and protection against binding one GitHub account to multiple portal users.
 - **[2026-09-28]**: feat: switch portal access to administrator-issued email/password accounts, require a first-login password change, and keep GitHub OAuth only for repository connection.

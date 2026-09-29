@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { encryptSecret, decryptSecret, generateBasicPassword } from "../../src/lib/security/crypto";
-import { mapCoolifyStatus, CoolifyClient, safeHttpsUrl } from "../../src/lib/coolify/client";
+import { mapCoolifyStatus, CoolifyClient, safeHttpsUrl, safePublicHttpsUrl } from "../../src/lib/coolify/client";
 import { parseEnv } from "../../src/lib/env";
 import { portalTag } from "../../src/lib/deployments/service";
 
@@ -31,6 +31,13 @@ describe("security primitives", () => {
     expect(safeHttpsUrl("javascript:alert(1)")).toBeNull();
     expect(safeHttpsUrl("https://user:password@app.example.com")).toBeNull();
     expect(safeHttpsUrl("not-a-url")).toBeNull();
+  });
+
+  test("upgrades Coolify HTTP domains to safe public HTTPS URLs", () => {
+    expect(safePublicHttpsUrl("http://app.example.com")).toBe("https://app.example.com/");
+    expect(safePublicHttpsUrl("https://app.example.com/path")).toBe("https://app.example.com/path");
+    expect(safePublicHttpsUrl("javascript:alert(1)")).toBeNull();
+    expect(safePublicHttpsUrl("http://user:password@app.example.com")).toBeNull();
   });
 });
 

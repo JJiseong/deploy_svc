@@ -6,7 +6,7 @@ import { getEnv } from "../env";
 import { writeAuditEvent } from "../audit";
 import { requireUser, type AuthorizedUser } from "../auth/authorization";
 import { deploymentInputSchema, isAllowedRepositoryOwner } from "../validation/portal";
-import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
+import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, safePublicHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
 import { consumePersistedRateLimit } from "../security/rate-limit";
 import { getGithubAccessToken } from "../github/account";
 import { analyzeGitHubRepository } from "../github/repositories";
@@ -29,7 +29,7 @@ async function recoverApplicationUrl(deployment: Deployment, client: CoolifyClie
   if (deployment.url || !deployment.coolifyApplicationId) return deployment;
   try {
     const application = await client.getApplication(deployment.coolifyApplicationId);
-    const url = safeHttpsUrl(application.fqdn);
+    const url = safePublicHttpsUrl(application.fqdn);
     if (!url) return deployment;
     return prisma.deployment.update({ where: { id: deployment.id }, data: { url } });
   } catch {
@@ -106,12 +106,12 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     // Coolify cannot know the generated domain at create time. Once it is
     // returned, reconcile the public settings so every new app receives the
     // noindex rule and has Basic Auth disabled before deployment starts.
-    const generatedDomain = safeHttpsUrl(application.fqdn);
+    const generatedDomain = safePublicHttpsUrl(application.fqdn);
     if (generatedDomain && typeof client.makeApplicationPublic === "function") {
       const configured = await client.makeApplicationPublic(applicationUuid, generatedDomain);
-      application = { ...application, ...configured, fqdn: safeHttpsUrl(configured.fqdn) ?? generatedDomain };
+      application = { ...application, ...configured, fqdn: safePublicHttpsUrl(configured.fqdn) ?? generatedDomain };
     }
-    await prisma.deployment.update({ where: { id: deployment.id }, data: { coolifyApplicationId: applicationUuid, actualName: application.name ?? applicationName(data.repository), url: safeHttpsUrl(application.fqdn), status: "PROVISIONING" } });
+    await prisma.deployment.update({ where: { id: deployment.id }, data: { coolifyApplicationId: applicationUuid, actualName: application.name ?? applicationName(data.repository), url: safePublicHttpsUrl(application.fqdn), status: "PROVISIONING" } });
     const started = await client.startDeployment(applicationUuid);
     const startedStatus = started.status ? mapCoolifyStatus(started.status) : "QUEUED";
     await prisma.deployment.update({ where: { id: deployment.id }, data: { latestDeploymentId: started.deployment_uuid ?? started.uuid ?? started.id ?? null, status: startedStatus } });
@@ -165,7 +165,7 @@ export async function refreshDeploymentStatus(user: AuthorizedUser, deploymentId
       .sort((left, right) => String(right.created_at ?? right.createdAt ?? "").localeCompare(String(left.created_at ?? left.createdAt ?? "")))[0] ?? (() => { throw error; })();
   }
   const status = mapCoolifyStatus(current.status);
-  const updated = await prisma.deployment.update({ where: { id: deployment.id }, data: { status, lastPolledAt: new Date(), failureSummary: status === "FAILED" ? "The latest deployment failed. Review the repository build and try again." : null, url: safeHttpsUrl(deployment.url) ?? safeHttpsUrl(current.deployment_url) ?? safeHttpsUrl(current.fqdn) } });
+  const updated = await prisma.deployment.update({ where: { id: deployment.id }, data: { status, lastPolledAt: new Date(), failureSummary: status === "FAILED" ? "The latest deployment failed. Review the repository build and try again." : null, url: safeHttpsUrl(deployment.url) ?? safePublicHttpsUrl(current.deployment_url) ?? safePublicHttpsUrl(current.fqdn) } });
   if (status === "FAILED" && deployment.status !== "FAILED") {
     await writeAuditEvent({ actorId: activeUser.id, action: "DEPLOYMENT_FAILURE", outcome: "FAILURE", targetType: "Deployment", targetId: deployment.id, metadata: { reason: "deployment_status_failed" } });
   }
