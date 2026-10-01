@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-10-01]**: fix: reapply public HTTPS and noindex settings after Coolify queues a deployment so newly deployed apps do not serve 503 through the portal URL.
 - **[2026-09-29]**: fix: recover Coolify HTTP-reported generated domains as safe public HTTPS links and automatically refresh missing URLs on completed deployment pages.
 - **[2026-09-29]**: docs: explain GitHub token-expiry recovery and switching to another connected account.
 - **[2026-09-29]**: feat: add GitHub reconnection and disconnect controls, expired-token recovery guidance, and protection against binding one GitHub account to multiple portal users.

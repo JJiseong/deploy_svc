@@ -115,6 +115,13 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     const started = await client.startDeployment(applicationUuid);
     const startedStatus = started.status ? mapCoolifyStatus(started.status) : "QUEUED";
     await prisma.deployment.update({ where: { id: deployment.id }, data: { latestDeploymentId: started.deployment_uuid ?? started.uuid ?? started.id ?? null, status: startedStatus } });
+    // Coolify may regenerate the application route while creating the first
+    // container, which can drop the HTTPS/noindex settings applied above.
+    // Reconcile once more after the deployment is queued so the generated
+    // container receives the public HTTPS router instead of returning 503.
+    if (generatedDomain && typeof client.makeApplicationPublic === "function") {
+      await client.makeApplicationPublic(applicationUuid, generatedDomain);
+    }
   } catch (error) {
     await prisma.deployment.update({ where: { id: deployment.id }, data: { status: "FAILED", failureSummary: publicFailure(error) } });
     await writeAuditEvent({ actorId: activeUser.id, action: "DEPLOYMENT_FAILURE", outcome: "FAILURE", targetType: "Deployment", targetId: deployment.id, metadata: { reason: publicFailure(error) } });
