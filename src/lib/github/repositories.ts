@@ -84,6 +84,10 @@ async function readGitHubFile(path: string, accessToken: string, fetcher: FetchL
     // Optional repository files may not exist. Authentication and rate-limit errors
     // must still propagate so the caller can prompt for GitHub reconnection.
     if (error instanceof GitHubRepositoriesError && error.status === 404) return null;
+    // File inspection is an enhancement over the root listing. If an older
+    // GitHub-compatible proxy does not expose the Contents file response, keep
+    // the safe default detector instead of blocking an otherwise valid deploy.
+    if (!(error instanceof GitHubRepositoriesError)) return null;
     throw error;
   }
 }
