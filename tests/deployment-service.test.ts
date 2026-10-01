@@ -91,6 +91,23 @@ describe("deployment orchestration", () => {
     }
   });
 
+  test("returns a reconnect action when GitHub rejects an expired token during analysis", async () => {
+    const owner = await prisma.user.create({ data: { githubId: "github-expired-analysis", githubLogin: "expired-analysis", role: "ADMIN", status: "ACTIVE" } });
+    await persistProviderAccessToken(owner.id, "github", "expired-token");
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ message: "Bad credentials" }), { status: 401 })) as unknown as typeof fetch;
+    try {
+      const result = await createDeployment({ id: owner.id, githubLogin: owner.githubLogin, role: "ADMIN", status: "ACTIVE" }, {
+        repository: "JJiseong/demo",
+        branch: "main",
+        idempotencyKey: "expired-analysis-1",
+      });
+      expect(result).toEqual({ ok: false, error: { code: "GITHUB_REAUTH_REQUIRED", message: "GitHub 연결이 만료되었습니다. 대시보드에서 다시 연결한 뒤 배포하세요." } });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("recovers and applies a generated domain when Coolify omits it during creation", async () => {
     const owner = await prisma.user.create({ data: { githubId: "github-delayed-domain", githubLogin: "delayed-domain", role: "ADMIN", status: "ACTIVE" } });
     await persistProviderAccessToken(owner.id, "github", "github-token-delayed-domain");
