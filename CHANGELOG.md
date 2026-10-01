@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-10-01]**: feat: inspect repository files during automatic analysis to detect Dockerfile `EXPOSE` ports and Node server ports before deployment, while retaining a safe default for compatible GitHub proxies that omit file contents.
 - **[2026-10-01]**: fix: recover omitted Coolify generated domains and reapply public HTTPS and noindex settings after deployment queueing so newly deployed apps do not serve 503 through the portal URL.
 - **[2026-09-29]**: fix: recover Coolify HTTP-reported generated domains as safe public HTTPS links and automatically refresh missing URLs on completed deployment pages.
 - **[2026-09-29]**: docs: explain GitHub token-expiry recovery and switching to another connected account.

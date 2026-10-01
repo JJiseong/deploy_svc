@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { listGitHubBranches, listGitHubRepositories } from "../../src/lib/github/repositories";
+import { analyzeGitHubRepository, listGitHubBranches, listGitHubRepositories } from "../../src/lib/github/repositories";
 
 function response(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -7,6 +7,10 @@ function response(body: unknown, init: ResponseInit = {}) {
     headers: { "content-type": "application/json" },
     ...init,
   });
+}
+
+function encoded(content: string) {
+  return Buffer.from(content, "utf8").toString("base64");
 }
 
 describe("GitHub repository discovery", () => {
@@ -63,5 +67,29 @@ describe("GitHub repository discovery", () => {
       { name: "main", sha: "abc123", protected: true },
       { name: "feature/login", sha: "def456", protected: false },
     ]);
+  });
+
+  test("detects the actual Node server port from repository files", async () => {
+    const result = await analyzeGitHubRepository("oauth-token", "JJiseong", "typing-practice", "main", async (input) => {
+      const url = String(input);
+      if (url.includes("/contents?ref=main")) return response([{ name: "package.json", type: "file" }, { name: "server.js", type: "file" }]);
+      if (url.includes("/contents/package.json?ref=main")) return response({ type: "file", encoding: "base64", content: encoded(JSON.stringify({ scripts: { start: "node server.js" } })) });
+      if (url.includes("/contents/server.js?ref=main")) return response({ type: "file", encoding: "base64", content: encoded("const PORT = Number(process.env.PORT) || 3001; app.listen(PORT);") });
+      throw new Error(`unexpected GitHub path: ${url}`);
+    });
+
+    expect(result).toMatchObject({ buildPack: "NIXPACKS", port: 3001 });
+    expect(result.explanation).toContain("3001");
+  });
+
+  test("uses Dockerfile EXPOSE as the container port", async () => {
+    const result = await analyzeGitHubRepository("oauth-token", "JJiseong", "docker-app", "main", async (input) => {
+      const url = String(input);
+      if (url.includes("/contents?ref=main")) return response([{ name: "Dockerfile", type: "file" }]);
+      if (url.includes("/contents/Dockerfile?ref=main")) return response({ type: "file", encoding: "base64", content: encoded("FROM node:22\nEXPOSE 8080\nCMD [\"node\", \"server.js\"]") });
+      throw new Error(`unexpected GitHub path: ${url}`);
+    });
+
+    expect(result).toMatchObject({ buildPack: "DOCKERFILE", port: 8080 });
   });
 });
