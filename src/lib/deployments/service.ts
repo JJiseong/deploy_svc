@@ -106,7 +106,11 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     // Coolify cannot know the generated domain at create time. Once it is
     // returned, reconcile the public settings so every new app receives the
     // noindex rule and has Basic Auth disabled before deployment starts.
-    const generatedDomain = safePublicHttpsUrl(application.fqdn);
+    let generatedDomain = safePublicHttpsUrl(application.fqdn);
+    if (!generatedDomain && typeof client.getApplication === "function") {
+      const current = await client.getApplication(applicationUuid);
+      generatedDomain = safePublicHttpsUrl(current.fqdn);
+    }
     if (generatedDomain && typeof client.makeApplicationPublic === "function") {
       const configured = await client.makeApplicationPublic(applicationUuid, generatedDomain);
       application = { ...application, ...configured, fqdn: safePublicHttpsUrl(configured.fqdn) ?? generatedDomain };

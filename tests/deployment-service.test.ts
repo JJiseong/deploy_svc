@@ -30,7 +30,7 @@ class FakeCoolify {
   createCalls = 0;
   deployCalls = 0;
   events: string[] = [];
-  async createApplication(input: { name: string }) { this.createCalls += 1; return { uuid: "app-1", name: input.name, fqdn: "https://demo.example.test" }; }
+  async createApplication(input: { name: string }): Promise<{ uuid: string; name: string; fqdn?: string }> { this.createCalls += 1; return { uuid: "app-1", name: input.name, fqdn: "https://demo.example.test" }; }
   async makeApplicationPublic(applicationUuid: string, domains: string | null) { this.events.push(`public:${applicationUuid}:${domains}`); return { uuid: applicationUuid, fqdn: domains ?? undefined }; }
   async startDeployment(applicationUuid?: string) { this.events.push(`deploy:${applicationUuid ?? ""}`); this.deployCalls += 1; return { deployment_uuid: "deployment-1", status: "queued" }; }
   async getDeployment() { return { deployment_uuid: "deployment-1", status: "finished", deployment_url: "https://demo.example.test" }; }
@@ -40,6 +40,11 @@ class FakeCoolify {
 
 class UnsafeUrlCoolify extends FakeCoolify {
   async createApplication(input: { name: string }) { this.createCalls += 1; return { uuid: "app-unsafe-url", name: input.name, fqdn: "javascript:alert(1)" }; }
+}
+
+class DelayedDomainCoolify extends FakeCoolify {
+  async createApplication(input: { name: string }) { this.createCalls += 1; return { uuid: "app-delayed-domain", name: input.name }; }
+  async getApplication() { this.events.push("read:app-delayed-domain"); return { uuid: "app-delayed-domain", fqdn: "http://delayed.example.test" }; }
 }
 
 beforeAll(() => {
@@ -81,6 +86,33 @@ describe("deployment orchestration", () => {
       expect(result.ok).toBe(true);
       expect(fake.events.at(-1)).toBe("public:app-1:https://demo.example.test/");
       expect(fake.events.findIndex((event) => event.startsWith("deploy:"))).toBeLessThan(fake.events.length - 1);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("recovers and applies a generated domain when Coolify omits it during creation", async () => {
+    const owner = await prisma.user.create({ data: { githubId: "github-delayed-domain", githubLogin: "delayed-domain", role: "ADMIN", status: "ACTIVE" } });
+    await persistProviderAccessToken(owner.id, "github", "github-token-delayed-domain");
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input) => {
+      if (String(input).includes("/repos/JJiseong/delayed/contents?ref=main")) return new Response(JSON.stringify([{ name: "package.json", type: "file" }]), { status: 200 });
+      throw new Error(`unexpected GitHub path: ${String(input)}`);
+    }) as typeof fetch;
+    try {
+      const fake = new DelayedDomainCoolify();
+      const result = await createDeployment({ id: owner.id, githubLogin: owner.githubLogin, role: "ADMIN", status: "ACTIVE" }, {
+        repository: "JJiseong/delayed",
+        branch: "main",
+        idempotencyKey: "delayed-domain-public-settings-1",
+      }, fake as unknown as Parameters<typeof createDeployment>[2]);
+      expect(result.ok).toBe(true);
+      expect(fake.events).toEqual([
+        "read:app-delayed-domain",
+        "public:app-delayed-domain:https://delayed.example.test/",
+        "deploy:app-delayed-domain",
+        "public:app-delayed-domain:https://delayed.example.test/",
+      ]);
     } finally {
       globalThis.fetch = originalFetch;
     }
