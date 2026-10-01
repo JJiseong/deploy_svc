@@ -17,8 +17,8 @@ Create these runtime secrets from `.env.sample`:
 | Secret | Purpose |
 |---|---|
 | `AUTH_SECRET` | Auth.js session encryption; at least 32 characters |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth application |
-| `APP_ENCRYPTION_KEY` | 32-byte hex key for Basic Authentication passwords |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub connection application (not portal sign-in) |
+| `APP_ENCRYPTION_KEY` | 32-byte hex key retained for legacy credential migration |
 | `COOLIFY_READ_API_TOKEN` | Read deployment status and reconcile applications |
 | `COOLIFY_WRITE_API_TOKEN` | Create applications |
 | `COOLIFY_DEPLOY_API_TOKEN` | Start deployments |
@@ -28,7 +28,6 @@ Set the non-secret identifiers and policy values as deployment configuration:
 ```text
 AUTH_URL=https://<portal-host>
 AUTH_TRUST_HOST=true
-BOOTSTRAP_GITHUB_LOGIN=JJiseong
 DATABASE_URL=file:/data/portal.db
 ALLOWED_GITHUB_OWNERS=JJiseong
 COOLIFY_BASE_URL=https://<coolify-host>
@@ -41,7 +40,7 @@ COOLIFY_ENVIRONMENT_NAME=production
 Configure the GitHub OAuth callback as:
 
 ```text
-https://<portal-host>/api/auth/callback/github
+https://<portal-host>/api/github/connect/callback
 ```
 
 Attach a persistent `/data` volume and run one portal replica. The container
@@ -80,29 +79,35 @@ inspection is still required during staging smoke testing.
 
 1. Confirm `GET /api/health/live` returns `{"status":"ok"}`.
 2. Confirm `GET /api/health/ready` returns `{"status":"ready","database":"ok"}`.
-3. Sign in as `JJiseong`; confirm the first successful sign-in creates an active
-   administrator grant.
-4. Sign out, then attempt an identity without an active grant. Confirm that no
-   portal session is issued and the response is neutral.
-5. Deactivate a linked user from `/admin/users`; confirm existing sessions stop
+3. Sign in with an administrator-issued email and temporary password; confirm
+   the first sign-in redirects to the required password-change screen.
+4. Change the password, sign out, and sign in again; confirm the dashboard opens
+   without a GitHub login prompt.
+5. Deactivate a user from `/admin/users`; confirm existing sessions stop
    working, then reactivate the user.
 
 ## 4. Deployment checks
 
 Use a private repository owned by an entry in `ALLOWED_GITHUB_OWNERS`.
 
-1. Submit a deployment with `Auto`, then record the portal deployment ID.
+1. Connect GitHub from the authenticated dashboard, choose a repository and
+   version, then record the portal deployment ID.
 2. In Coolify, confirm the created application has 0.5 CPU, 512 MB memory,
-   HTTP Basic Authentication, generated HTTPS domain, and automatic deploys.
-3. Confirm the portal reaches `Healthy` and shows the generated URL.
-4. Reveal credentials once, verify the URL is protected, copy the password,
-   then hide the disclosure. Confirm the password is absent from audit metadata.
-5. Push a successful commit. Confirm Coolify deploys the same application and
+   Basic Auth disabled, a generated HTTPS domain, noindex, and automatic deploys.
+3. Confirm the portal reaches `Healthy`, shows the generated URL, and the
+   **서비스 열기** link returns HTTP 200.
+4. Push a successful commit. Confirm Coolify deploys the same application and
    the portal retains the same URL.
-6. Push a deliberately failing commit. Confirm the portal shows a sanitized
+5. Push a deliberately failing commit. Confirm the portal shows a sanitized
    failure and keeps the previous healthy URL.
+6. Disconnect and reconnect GitHub; confirm the account picker appears and
+   repository access is blocked while disconnected.
 7. Reopen the portal after a container restart. Confirm users, audit logs, and
    deployment history remain available.
+
+For an existing service, an administrator can run **팀원 관리 → 기존 서비스
+공개 전환**. The operation is idempotent, records one result per deployment,
+and clears legacy credentials only after the public conversion is confirmed.
 
 ## 5. Security and accessibility gates
 
@@ -159,3 +164,34 @@ Before production traffic:
   serve the portal with a new empty database.
 - Revoke and rotate a token immediately if it appears in logs or browser
   network data.
+
+## 7. Persistent EC2 operator SSH access
+
+Use the stable local alias below so deploy and recovery commands do not depend
+on remembering host flags or accidentally selecting a different private key:
+
+```sshconfig
+Host deploy-svc-ec2
+  HostName 13.212.183.181
+  User ubuntu
+  Port 22
+  IdentityFile ~/.ssh/deploy_svc_ec2_ed25519
+  IdentitiesOnly yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+  StrictHostKeyChecking accept-new
+```
+
+The private key must remain outside the repository and be readable only by the
+current user:
+
+```bash
+chmod 600 ~/.ssh/config ~/.ssh/deploy_svc_ec2_ed25519
+ssh -G deploy-svc-ec2 | grep -E '^(hostname|user|identityfile|identitiesonly) '
+ssh deploy-svc-ec2
+```
+
+`accept-new` records a previously unseen host key but still refuses an
+unexpected key change. If the EC2 instance is rebuilt, verify the new
+fingerprint through the AWS console or another trusted channel before removing
+the old entry with `ssh-keygen -R 13.212.183.181`.

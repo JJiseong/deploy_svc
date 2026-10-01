@@ -10,6 +10,14 @@ adr: docs/adr/0001-coolify-portal-mvp-architecture.md
 
 # Coolify Portal MVP UI Specification
 
+> **Current implementation amendment (2026-10-01):** This historical MVP
+> baseline is superseded where it describes GitHub as the portal login or
+> per-app Basic Auth. Portal access now uses administrator-issued email and
+> password accounts. GitHub is connected only after portal login, deployment
+> is repository/version based, and deployed services use public HTTPS with
+> `noindex`. See the in-app Korean guide and staging runbook for the current
+> user journey.
+
 ## Purpose and principles
 
 This specification defines the MVP interface for a private, single-tenant Coolify portal. It covers the five approved routes and gives the code-writer an implementation contract.
@@ -21,9 +29,9 @@ This specification defines the MVP interface for a private, single-tenant Coolif
 
 | Journey | Required flow |
 |---|---|
-| Deploy | Sign in with GitHub -> validate the active grant -> open `/dashboard` -> enter repository settings -> validate -> create -> open `/deployments/[id]` -> announce transitions -> show the healthy URL. |
+| Deploy | Sign in with email/password -> change the temporary password if required -> connect GitHub when prompted -> choose a repository/version -> open `/deployments/[id]` -> show the healthy public URL. |
 | Recover | Show a sanitized failure and last update -> retain any healthy URL -> user corrects and pushes -> **Refresh status** reconciles the newest deployment at the same URL. |
-| Manage access | Open `/admin/users` -> add a GitHub login and role -> confirm creation -> change role, deactivate with confirmation, or reactivate. Deactivation ends sessions immediately. |
+| Manage access | Open `/admin/users` -> create an email account with a temporary password and role -> confirm creation -> change role, reset a password, deactivate, or reactivate. Deactivation ends sessions immediately. |
 | Review activity | Open `/admin/audit-logs` -> filter redacted events -> paginate newest-first results while preserving filters and focusing the results heading. |
 | Denied access | Return an unknown or inactive identity to the denied login state. Show authenticated non-admins a data-free forbidden page with **Return to dashboard**. |
 

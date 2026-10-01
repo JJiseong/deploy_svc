@@ -1,5 +1,11 @@
 # ADR-0001: Coolify Portal MVP Architecture
 
+> **Superseded security boundary (2026-10-01):** This ADR records the original
+> GitHub-login/Basic-Auth prototype. The production portal now authenticates
+> with administrator-issued email/password accounts; GitHub OAuth is only a
+> post-login repository connection, and applications are public HTTPS with
+> `noindex`. Legacy Basic Auth data is removed by the idempotent migration.
+
 **Status:** Accepted
 **Date:** 2026-09-24
 **Decision owners:** Project owner and PM
