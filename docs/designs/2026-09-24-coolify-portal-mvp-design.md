@@ -10,6 +10,13 @@ adr: docs/adr/0001-coolify-portal-mvp-architecture.md
 
 # Coolify Portal MVP Design
 
+> **Superseded architecture note (2026-10-01):** The original GitHub-login and
+> Basic-Auth design below is retained as historical provenance. The deployed
+> architecture now uses email/password portal accounts, first-login password
+> changes, GitHub connection only for repository access, automatic repository
+> analysis, and public HTTPS/noindex applications. The current behavior is
+> specified in the staging runbook and `/guide` page.
+
 ## Implementation Plan
 
 ### Summary

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-10-01]**: ops: add a persistent `deploy-svc-ec2` SSH operator alias and lock down key permissions; harden existing-service public migration to clear orphan legacy credentials safely and report missing public domains without destructive cleanup.
 - **[2026-10-01]**: feat: inspect repository files during automatic analysis to detect Dockerfile `EXPOSE` ports and Node server ports before deployment, while retaining a safe default for compatible GitHub proxies that omit file contents.
 - **[2026-10-01]**: fix: return an explicit GitHub reconnect or rate-limit action when repository analysis is rejected by GitHub during deployment.
 - **[2026-10-01]**: feat: expose idempotent existing-service public migration in the admin UI and show email actors plus plain-language GitHub/member actions in audit logs.
