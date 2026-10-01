@@ -9,7 +9,7 @@ import { deploymentInputSchema, isAllowedRepositoryOwner } from "../validation/p
 import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, safePublicHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
 import { consumePersistedRateLimit } from "../security/rate-limit";
 import { getGithubAccessToken } from "../github/account";
-import { analyzeGitHubRepository } from "../github/repositories";
+import { analyzeGitHubRepository, GitHubRepositoriesError } from "../github/repositories";
 
 const ACTIVE = new Set<DeploymentStatus>(["REQUESTED", "PROVISIONING", "QUEUED", "IN_PROGRESS"]);
 
@@ -58,7 +58,11 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
   if (!token) return { ok: false, error: { code: "GITHUB_NOT_CONNECTED", message: "배포하려면 먼저 GitHub를 연결하세요." } };
   let analysis;
   try { analysis = await analyzeGitHubRepository(token, owner, repositoryName, data.branch); }
-  catch { return { ok: false, error: { code: "REPOSITORY_ANALYSIS_FAILED", message: "저장소를 자동 분석하지 못했습니다. GitHub 연결을 다시 확인하거나 Dockerfile을 추가해 주세요." } }; }
+  catch (error) {
+    if (error instanceof GitHubRepositoriesError && error.status === 401) return { ok: false, error: { code: "GITHUB_REAUTH_REQUIRED", message: "GitHub 연결이 만료되었습니다. 대시보드에서 다시 연결한 뒤 배포하세요." } };
+    if (error instanceof GitHubRepositoriesError && error.status === 403) return { ok: false, error: { code: "GITHUB_RATE_LIMITED", message: "GitHub 요청 한도에 도달했습니다. 잠시 후 다시 시도하세요." } };
+    return { ok: false, error: { code: "REPOSITORY_ANALYSIS_FAILED", message: "저장소를 자동 분석하지 못했습니다. GitHub 연결을 다시 확인하거나 Dockerfile을 추가해 주세요." } };
+  }
   let deployment: Awaited<ReturnType<typeof prisma.deployment.create>>;
   try {
     deployment = await prisma.$transaction(async (transaction) => {
