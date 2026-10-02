@@ -62,6 +62,21 @@ export type CreateApplicationInput = {
   basicPassword?: string;
 };
 
+type ResourceLimits = {
+  cpus: string;
+  memory: string;
+};
+
+/**
+ * Static sites only need a web server to serve already-built files. Keep their
+ * Coolify container deliberately small while retaining a larger isolated
+ * profile for applications that execute user-provided server code.
+ */
+export function resourceLimitsForBuildPack(buildPack: CreateApplicationInput["buildPack"]): ResourceLimits {
+  if (buildPack === "static") return { cpus: "0.1", memory: "128m" };
+  return { cpus: "0.5", memory: "512m" };
+}
+
 export class CoolifyError extends Error {
   constructor(readonly status: number, message = "Coolify request failed", readonly retryAfterSeconds?: number) {
     super(message);
@@ -117,6 +132,7 @@ export class CoolifyClient {
   }
 
   async createApplication(input: CreateApplicationInput): Promise<CoolifyApplication> {
+    const limits = resourceLimitsForBuildPack(input.buildPack);
     const body = {
       project_uuid: this.env.COOLIFY_PROJECT_UUID,
       server_uuid: this.env.COOLIFY_SERVER_UUID,
@@ -127,8 +143,8 @@ export class CoolifyClient {
       build_pack: input.buildPack,
       ports_exposes: String(input.port),
       name: input.name,
-      limits_cpus: "0.5",
-      limits_memory: "512m",
+      limits_cpus: limits.cpus,
+      limits_memory: limits.memory,
       is_auto_deploy_enabled: true,
       is_preview_deployments_enabled: false,
       is_force_https_enabled: true,

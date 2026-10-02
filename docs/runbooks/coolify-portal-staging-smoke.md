@@ -92,8 +92,11 @@ Use a private repository owned by an entry in `ALLOWED_GITHUB_OWNERS`.
 
 1. Connect GitHub from the authenticated dashboard, choose a repository and
    version, then record the portal deployment ID.
-2. In Coolify, confirm the created application has 0.5 CPU, 512 MB memory,
-   Basic Auth disabled, a generated HTTPS domain, noindex, and automatic deploys.
+2. In Coolify, confirm the created application has the expected resource profile:
+   static sites use 0.1 CPU and 128 MB memory, while Node/Dockerfile apps use
+   0.5 CPU and 512 MB memory. In both cases confirm Basic Auth is disabled,
+   the HTTPS domain is generated, noindex is enabled, and automatic deploys are
+   enabled.
 3. Confirm the portal reaches `Healthy`, shows the generated URL, and the
    **서비스 열기** link returns HTTP 200.
 4. Push a successful commit. Confirm Coolify deploys the same application and

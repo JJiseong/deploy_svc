@@ -81,6 +81,20 @@ describe("Coolify contracts", () => {
     expect(body.git_repository).toBe("https://github.com/JJiseong/demo");
   });
 
+  test("uses a lower resource profile for static applications", async () => {
+    let request: Request | undefined;
+    const client = new CoolifyClient(env, async (input, init) => {
+      request = new Request(input, init);
+      return new Response(JSON.stringify({ uuid: "static-app", fqdn: "https://static.example.com" }), { status: 201, headers: { "content-type": "application/json" } });
+    });
+    await client.createApplication({ name: "static-demo", repository: "JJiseong/static-demo", branch: "main", port: 80, buildPack: "static", tag: "tag-static" });
+    const body = JSON.parse(await request!.text()) as Record<string, unknown>;
+    expect(body.build_pack).toBe("static");
+    expect(body.ports_exposes).toBe("80");
+    expect(body.limits_cpus).toBe("0.1");
+    expect(body.limits_memory).toBe("128m");
+  });
+
   test("sends the generated domain as the noindex entry when making an app public", async () => {
     let request: Request | undefined;
     const client = new CoolifyClient(env, async (input, init) => {
