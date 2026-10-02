@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-10-02]**: docs: replace the template README with a deployment-portal guide covering email login, GitHub connection, repository detection, public HTTPS services, administration, operations, troubleshooting, and local validation.
 - **[2026-10-02]**: security: enforce first-login password changes across pages, server actions, repository APIs, and deployment status endpoints; never return password hashes in temporary-password responses.
 - **[2026-10-02]**: fix: stop deployments when repository analysis is inconclusive and explain the Dockerfile, package.json, or index.html change required to continue; update staging preflight for the post-login GitHub callback.
 - **[2026-10-01]**: security: add a global `X-Robots-Tag: noindex, nofollow` response policy so the deployment portal itself is not indexed alongside its public services.
