@@ -108,6 +108,25 @@ describe("deployment orchestration", () => {
     }
   });
 
+  test("explains the required repository change when automatic detection is inconclusive", async () => {
+    const owner = await prisma.user.create({ data: { githubId: "github-unknown-analysis", githubLogin: "unknown-analysis", role: "USER", status: "ACTIVE" } });
+    await persistProviderAccessToken(owner.id, "github", "github-token-unknown-analysis");
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify([]), { status: 200 })) as unknown as typeof fetch;
+    try {
+      const fake = new FakeCoolify();
+      const result = await createDeployment({ id: owner.id, githubLogin: owner.githubLogin, role: "USER", status: "ACTIVE" }, {
+        repository: "JJiseong/unknown",
+        branch: "main",
+        idempotencyKey: "unknown-analysis-1",
+      }, fake as unknown as Parameters<typeof createDeployment>[2]);
+      expect(result).toEqual({ ok: false, error: { code: "REPOSITORY_NEEDS_SETUP", message: "일반 웹앱으로 인식했습니다. 배포가 실패하면 저장소에 Dockerfile 또는 실행 안내를 추가해 주세요. Dockerfile, package.json 또는 index.html을 저장소에 추가한 뒤 다시 시도하세요." } });
+      expect(fake.createCalls).toBe(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("recovers and applies a generated domain when Coolify omits it during creation", async () => {
     const owner = await prisma.user.create({ data: { githubId: "github-delayed-domain", githubLogin: "delayed-domain", role: "ADMIN", status: "ACTIVE" } });
     await persistProviderAccessToken(owner.id, "github", "github-token-delayed-domain");

@@ -23,6 +23,7 @@ const { bindGithubUser, isGithubLoginAllowed } = await import("../src/lib/auth/a
 const { createAccessGrant, updateAccessGrantRole, setAccessGrantStatus } = await import("../src/lib/auth/grants");
 const { createPrismaAdapter, persistProviderAccessToken } = await import("../src/lib/auth/adapter");
 const { clearGithubConnection, getGithubAccessToken } = await import("../src/lib/github/account");
+const { createMember, resetMemberPassword } = await import("../src/lib/auth/members");
 
 beforeAll(() => {
   const result = spawnSync("./node_modules/.bin/prisma", ["migrate", "deploy", "--schema", "prisma/schema.prisma"], { env: { ...process.env, RUST_LOG: "info" }, stdio: "ignore" });
@@ -77,7 +78,7 @@ describe("SQLite integration", () => {
   });
 
   test("admin grant mutations update linked users, revoke sessions, and write audit events", async () => {
-    const actor = await prisma.user.create({ data: { githubId: "github-grant-actor", githubLogin: "grant-actor", role: "ADMIN", status: "ACTIVE" } });
+    const actor = await prisma.user.create({ data: { githubId: "github-grant-actor", githubLogin: "grant-actor", mustChangePassword: false, role: "ADMIN", status: "ACTIVE" } });
     const member = await prisma.user.create({ data: { githubId: "github-grant-member", githubLogin: "grant-member", role: "USER", status: "ACTIVE" } });
     const linkedGrant = await prisma.accessGrant.create({ data: { githubLogin: "grant-member", role: "USER", status: "ACTIVE", userId: member.id, createdById: actor.id } });
     const session = await prisma.session.create({ data: { sessionToken: "grant-member-session", userId: member.id, expires: new Date(Date.now() + 60_000) } });
@@ -145,5 +146,17 @@ describe("SQLite integration", () => {
     expect(disconnected).toEqual({ githubId: null, githubLogin: null, image: null });
     expect(await prisma.account.findFirst({ where: { userId: user.id, provider: "github" } })).toBeNull();
     await prisma.user.delete({ where: { id: user.id } });
+  });
+
+  test("returns temporary passwords without exposing password hashes", async () => {
+    const actor = await prisma.user.create({ data: { email: "member-admin@example.test", passwordHash: "admin-hash", mustChangePassword: false, role: "ADMIN", status: "ACTIVE" } });
+    const created = await createMember(actor.id, { email: "new-member@example.test", role: "USER" });
+    expect(created.temporaryPassword).toBeString();
+    expect(created.member).not.toHaveProperty("passwordHash");
+    expect(created.member.email).toBe("new-member@example.test");
+    const reset = await resetMemberPassword(actor.id, created.member.id);
+    expect(reset.temporaryPassword).toBeString();
+    expect(reset.member).not.toHaveProperty("passwordHash");
+    await prisma.user.deleteMany({ where: { id: { in: [actor.id, created.member.id] } } });
   });
 });

@@ -490,7 +490,7 @@ Before implementation rollout, the owner must provide or confirm:
 
 ## References
 
-- [Coolify portal prototype handoff](../../memory/2026-09-22-coolify-portal-prototype-handoff.md)
+- [Coolify portal prototype handoff](../../memory/archive/2026-09-22-coolify-portal-prototype-handoff.md)
 - [Coolify API overview](https://coolify.io/docs/api/overview)
 - [Create private GitHub App application](https://coolify.io/docs/api/endpoints/applications/create-private-github-app-application)
 - [Deploy by application UUID](https://coolify.io/docs/api/endpoints/deployments/deploy-by-tag-or-uuid)

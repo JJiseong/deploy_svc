@@ -4,7 +4,7 @@ import { Prisma, type BuildPack, type Deployment, type DeploymentStatus } from "
 import { prisma } from "../db";
 import { getEnv } from "../env";
 import { writeAuditEvent } from "../audit";
-import { requireUser, type AuthorizedUser } from "../auth/authorization";
+import { requirePasswordChanged, requireUser, type AuthorizedUser } from "../auth/authorization";
 import { deploymentInputSchema, isAllowedRepositoryOwner } from "../validation/portal";
 import { CoolifyClient, CoolifyError, mapCoolifyStatus, safeHttpsUrl, safePublicHttpsUrl, type CoolifyApplication, type CoolifyDeployment } from "../coolify/client";
 import { consumePersistedRateLimit } from "../security/rate-limit";
@@ -39,7 +39,13 @@ async function recoverApplicationUrl(deployment: Deployment, client: CoolifyClie
 }
 
 export async function createDeployment(user: AuthorizedUser, input: unknown, client = new CoolifyClient()): Promise<ActionResult<{ id: string; status: DeploymentStatus }>> {
-  const activeUser = requireUser(user);
+  let activeUser: AuthorizedUser;
+  try {
+    activeUser = requirePasswordChanged(user);
+  } catch (error) {
+    if (error instanceof Error && error.name === "AuthorizationError") return { ok: false, error: { code: "PASSWORD_CHANGE_REQUIRED", message: "먼저 새 비밀번호를 설정하세요." } };
+    throw error;
+  }
   const env = getEnv();
   const parsed = deploymentInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: { code: "VALIDATION_ERROR", message: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors } };
@@ -62,6 +68,9 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
     if (error instanceof GitHubRepositoriesError && error.status === 401) return { ok: false, error: { code: "GITHUB_REAUTH_REQUIRED", message: "GitHub 연결이 만료되었습니다. 대시보드에서 다시 연결한 뒤 배포하세요." } };
     if (error instanceof GitHubRepositoriesError && error.status === 403) return { ok: false, error: { code: "GITHUB_RATE_LIMITED", message: "GitHub 요청 한도에 도달했습니다. 잠시 후 다시 시도하세요." } };
     return { ok: false, error: { code: "REPOSITORY_ANALYSIS_FAILED", message: "저장소를 자동 분석하지 못했습니다. GitHub 연결을 다시 확인하거나 Dockerfile을 추가해 주세요." } };
+  }
+  if (analysis.buildPack === "AUTO") {
+    return { ok: false, error: { code: "REPOSITORY_NEEDS_SETUP", message: `${analysis.explanation} Dockerfile, package.json 또는 index.html을 저장소에 추가한 뒤 다시 시도하세요.` } };
   }
   let deployment: Awaited<ReturnType<typeof prisma.deployment.create>>;
   try {

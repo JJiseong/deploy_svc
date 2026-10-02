@@ -11,9 +11,9 @@ export type AuthorizedUser = {
 };
 
 export class AuthorizationError extends Error {
-  readonly code: "UNAUTHENTICATED" | "FORBIDDEN";
+  readonly code: "UNAUTHENTICATED" | "FORBIDDEN" | "PASSWORD_CHANGE_REQUIRED";
 
-  constructor(code: "UNAUTHENTICATED" | "FORBIDDEN", message = code === "UNAUTHENTICATED" ? "Authentication required" : "Access denied") {
+  constructor(code: "UNAUTHENTICATED" | "FORBIDDEN" | "PASSWORD_CHANGE_REQUIRED", message = code === "UNAUTHENTICATED" ? "Authentication required" : code === "PASSWORD_CHANGE_REQUIRED" ? "Change the temporary password before continuing" : "Access denied") {
     super(message);
     this.name = "AuthorizationError";
     this.code = code;
@@ -28,7 +28,14 @@ export function requireUser(user: AuthorizedUser | null | undefined): Authorized
 
 export function requireAdmin(user: AuthorizedUser | null | undefined): AuthorizedUser {
   const activeUser = requireUser(user);
+  if (activeUser.mustChangePassword) throw new AuthorizationError("PASSWORD_CHANGE_REQUIRED");
   if (activeUser.role !== "ADMIN") throw new AuthorizationError("FORBIDDEN");
+  return activeUser;
+}
+
+export function requirePasswordChanged(user: AuthorizedUser): AuthorizedUser {
+  const activeUser = requireUser(user);
+  if (activeUser.mustChangePassword) throw new AuthorizationError("PASSWORD_CHANGE_REQUIRED");
   return activeUser;
 }
 
@@ -46,7 +53,7 @@ export async function requireAdminById(userId: string, client = prisma): Promise
 }
 
 export async function requireDeploymentOwnerOrAdmin(user: AuthorizedUser, ownerId: string): Promise<AuthorizedUser> {
-  const activeUser = requireUser(user);
+  const activeUser = requirePasswordChanged(user);
   if (!canViewDeployment(activeUser, { ownerId })) throw new AuthorizationError("FORBIDDEN");
   return activeUser;
 }

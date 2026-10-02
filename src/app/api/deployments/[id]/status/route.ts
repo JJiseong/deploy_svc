@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (user.mustChangePassword) return NextResponse.json({ error: "PASSWORD_CHANGE_REQUIRED", message: "먼저 새 비밀번호를 설정하세요." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   const { id } = await context.params;
   let deployment;
   try {

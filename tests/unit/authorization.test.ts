@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { AuthorizationError, canViewDeployment, requireAdmin } from "../../src/lib/auth/authorization";
+import { AuthorizationError, canViewDeployment, requireAdmin, requirePasswordChanged } from "../../src/lib/auth/authorization";
 
 describe("authorization", () => {
   test("allows users to view their own deployment and admins to view any deployment", () => {
@@ -12,5 +12,10 @@ describe("authorization", () => {
     expect(() => requireAdmin({ id: "u1", role: "USER", status: "ACTIVE" })).toThrow(AuthorizationError);
     expect(requireAdmin({ id: "u1", role: "ADMIN", status: "ACTIVE" }).id).toBe("u1");
     expect(() => requireAdmin({ id: "u1", role: "ADMIN", status: "INACTIVE" })).toThrow(AuthorizationError);
+  });
+
+  test("blocks protected operations until a temporary password is changed", () => {
+    expect(() => requirePasswordChanged({ id: "u1", role: "USER", status: "ACTIVE", mustChangePassword: true })).toThrow(AuthorizationError);
+    expect(requirePasswordChanged({ id: "u1", role: "USER", status: "ACTIVE", mustChangePassword: false }).id).toBe("u1");
   });
 });

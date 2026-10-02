@@ -15,7 +15,6 @@ const required = [
   "AUTH_SECRET",
   "AUTH_GITHUB_ID",
   "AUTH_GITHUB_SECRET",
-  "BOOTSTRAP_GITHUB_LOGIN",
   "DATABASE_URL",
   "APP_ENCRYPTION_KEY",
   "ALLOWED_GITHUB_OWNERS",
@@ -72,7 +71,6 @@ try {
   if (authUrl.protocol !== "https:" || authUrl.username || authUrl.password || authUrl.search || authUrl.hash) throw new Error("AUTH_URL must be a clean HTTPS URL");
   if (process.env.AUTH_TRUST_HOST?.trim().toLowerCase() !== "true") throw new Error("AUTH_TRUST_HOST must be true in staging");
   const githubLoginPattern = /^[a-z\d](?:[a-z\d-]{0,37})$/i;
-  if (!githubLoginPattern.test(value("BOOTSTRAP_GITHUB_LOGIN"))) throw new Error("BOOTSTRAP_GITHUB_LOGIN is not a valid GitHub login");
   const owners = value("ALLOWED_GITHUB_OWNERS").split(",").map((owner) => owner.trim()).filter(Boolean);
   if (owners.length === 0 || owners.some((owner) => !githubLoginPattern.test(owner))) throw new Error("ALLOWED_GITHUB_OWNERS contains an invalid GitHub owner");
 
@@ -81,7 +79,7 @@ try {
 
   await checkDatabase();
   console.log("[preflight] environment and SQLite readiness passed");
-  console.log(`[preflight] GitHub callback: ${new URL("/api/auth/callback/github", authUrl).toString()}`);
+  console.log(`[preflight] GitHub callback: ${new URL("/api/github/connect/callback", authUrl).toString()}`);
   if (skipCoolify) {
     console.log("[preflight] Coolify read check skipped by explicit --skip-coolify");
   } else {

@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (user.mustChangePassword) return NextResponse.json({ error: "PASSWORD_CHANGE_REQUIRED", message: "먼저 새 비밀번호를 설정하세요." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   const token = await getGithubAccessToken(user.id);
   if (!token) return NextResponse.json({ error: "GITHUB_REAUTH_REQUIRED", message: "저장소를 보려면 GitHub 연결이 필요합니다." }, { status: 409, headers: { "Cache-Control": "no-store" } });
   try {
