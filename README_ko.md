@@ -1,89 +1,56 @@
 ---
 sync_version: 1
-translated_from_hash: 9caee4b61f563641b7ec7b8d1f4a9ed9a8a363d436d3f7862dc72a37fa468bdb
+translated_from_hash: 266077bc38e29ef89a5155646ae3cb69a5b44e50253a07e1168a04b98b5b3a2b
 lang: ko
 lang_reason: source-material
 ---
 
-# co-develop
+# 배포 포털
 
-> **언어**: [English](README.md) · **한국어**
-> **상태**: ✅ Stable — v1.0.0
-> Software development workflow — full agent team with PM, Architect, Designer, Code Writer, Test Runner, Security Monitor, and Stack Setup Specialist (tech stack detection and environment initialization)
+이 저장소의 기본 README는 한국어로 작성되어 있습니다. 자세한 절차와 최신 운영 정보는 [README.md](README.md)를 확인하세요.
 
-## 개요
+## 서비스 소개
 
-Software development workflow — full agent team with PM, Architect, Designer, Code Writer, Test Runner, Security Monitor, and Stack Setup Specialist (tech stack detection and environment initialization). 전체 아키텍처와 표준은 docs/context.md를 참고하세요.
+승인된 GitHub 저장소를 HTTPS 서비스로 배포하는 포털입니다.
 
-## 빠른 시작
+## 사용자 빠른 시작
 
-이것은 워크스페이스 템플릿의 안정적인 변형입니다. `templates/common`에서 상속하며 변형별 맞춤 설정을 포함합니다.
+포털 로그인 → GitHub 연결 → 저장소·버전 선택 → 배포 시작 순서로 사용합니다.
 
-### Claude Code 사용자:
+## 지원되는 저장소
 
-자세한 지침은 `CLAUDE.md`를 참고하세요.
+Dockerfile, Node 웹앱, 정적 HTML 저장소를 자동으로 분석합니다.
 
-### Gemini CLI 사용자:
+## 관리자 기능
 
-자세한 지침은 `GEMINI.md`를 참고하세요.
+팀원 계정, 임시 비밀번호, 감사 기록, 기존 서비스 공개 전환을 관리합니다.
 
-## 팀 미션
+## 공개 주소와 보안
 
-**미션:** Software development workflow — full agent team with PM, Architect, Designer, Code Writer, Test Runner, Security Monitor, and Stack Setup Specialist (tech stack detection and environment initialization)
+공개 HTTPS와 검색 비노출을 적용하며 GitHub 토큰은 서버에서 암호화합니다.
 
-## AI 팀 소개
+## 문제 해결
 
-당신의 파트너는 각기 고유한 역할을 가진 전문 에이전트들입니다. **프로젝트 매니저(PM)**가 유일한 진입점이며 나머지 팀을 조율합니다.
+GitHub callback 오류, 연결 만료, 저장소 누락, 공개 주소 문제 해결법은 기본 README에 정리되어 있습니다.
 
-| 에이전트 | 역할 | 티어 | 모델 |
-|---------|------|------|------|
-| **PM** | Project Manager — workflow orchestration, dispatch, quality gates | high | inherit |
-| **architect** | Design agent - produces implementation plans and technical specs | high | inherit |
-| **code-writer** | Implementation agent - writes code from an approved plan | low | inherit |
-| **designer** | UI/UX design agent - produces wireframes, component specs, and design tokens | medium | inherit |
-| **security-monitor** | Security monitor - scans for vulnerabilities, advisories, and secret leaks | medium | inherit |
-| **stack-setup** | Stack Setup Specialist | low | inherit |
-| **test-runner** | QA and verification agent - runs tests and validates acceptance criteria | medium | inherit |
+## 로컬 개발
 
-## 스킬
+Bun과 SQLite를 사용해 로컬에서 포털을 실행할 수 있습니다.
 
-- **code-review**: Conducts thorough code reviews focusing on correctness, maintainability, security, and best practices. Use when: reviewing pull requests, evaluating code quality, providing constructive feedback, or ensuring code standards compliance.
-- **refactoring**: Improves code structure and design while preserving behavior using systematic refactoring techniques. Use when: cleaning up code, reducing duplication, improving maintainability, or paying down technical debt.
-- **swe-solve**: Autonomous 4-stage issue-to-PR resolution pipeline for software engineering tasks, featuring test-driven validation and pull-request synthesis.
-- **test-driven-development**: Implements software using Test-Driven Development (TDD) methodology with red-green-refactor cycle. Use when: developing new features, fixing bugs with tests, or ensuring code reliability through test-first approach.
+## 운영 배포
 
-## 협업 방법
+Coolify, 영속 볼륨, OAuth callback, SSH 운영 절차를 안내합니다.
 
-협업 방식은 품질을 극대화하고 충돌을 방지하도록 구조화되어 있습니다. 표준 워크플로는 다음과 같습니다:
+## 검증 명령
 
-### A. PM 게이트웨이
+타입 검사, 단위·통합 테스트, 빌드, 접근성 검사를 제공합니다.
 
-항상 요청을 시작할 때 **PM**과 먼저 대화하세요. 전문 에이전트를 직접 호출하지 마세요. PM이 요청을 분석하고 적절한 전문가를 불러옵니다.
+## 저장소 구조
 
-### B. 표준 워크플로 단계
+앱 화면, 인증, GitHub 연동, 배포 서비스, Prisma 스키마의 위치를 설명합니다.
 
-1. **팀 구성:** PM이 필요한 전문 에이전트/스킬을 생성합니다.
-2. **분류:** PM이 요청을 분류하고 읽기 전용 에이전트를 병렬로 배치합니다.
-3. **분석:** PM이 조사 결과를 요구사항 + 완료 기준으로 종합합니다.
-4. **설계:** 아키텍트가 구현 계획 + ADR을 작성합니다.
-5. **구현:** 전문가가 구현하고, PM은 실패 시 최대 3회까지 반복합니다.
-6. **마무리:** PM이 결정을 기록하고 `/sync`를 실행한 뒤 PR을 엽니다.
+## 라이선스
 
-### C. 사용 가능한 명령어
+[LICENSE](LICENSE)와 [SECURITY.md](SECURITY.md)를 확인하세요.
 
-일상적인 작업은 슬래시 명령어(Claude Code 및 Gemini CLI에서 Skill로 등록됨)로 구동됩니다:
-
-- `/sync "feat: ..."` — 전체 파이프라인: memlog → changelog → audit → commit → PR.
-- `/changelog "..."` — `CHANGELOG.md`에 항목 추가.
-- `/memlog "summary"` — 오늘 세션 로그에 요약 추가.
-- `/meeting` — 구조화된 인라인 다중 에이전트 토론 진행.
-
-## 변형 유형
-
-**유형**: development
-
-이 변형은 소프트웨어 개발 워크플로, 기능 구현, 통합 테스트에 중점을 둡니다.
-
----
-
-*최근 갱신: 2026-08-09*
+*Last Updated: 2026-10-02*
