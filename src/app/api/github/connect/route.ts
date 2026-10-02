@@ -10,6 +10,7 @@ function signature(value: string) { return createHmac("sha256", process.env.AUTH
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.redirect(new URL("/login", process.env.AUTH_URL));
+  if (user.mustChangePassword) return NextResponse.redirect(new URL("/account/change-password", process.env.AUTH_URL));
   const state = randomBytes(24).toString("base64url");
   const payload = `${user.id}.${state}`;
   const response = NextResponse.redirect(buildGithubAuthorizationUrl({ clientId: process.env.AUTH_GITHUB_ID ?? "", redirectUri: new URL("/api/github/connect/callback", process.env.AUTH_URL).toString(), scope: "read:user user:email repo", state }));

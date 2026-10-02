@@ -18,6 +18,18 @@ adr: docs/adr/0001-coolify-portal-mvp-architecture.md
 > `noindex`. See the in-app Korean guide and staging runbook for the current
 > user journey.
 
+### 2026-10-02 security completion amendment
+
+- A temporary password is a hard gate: pages, server actions, GitHub APIs,
+  deployment creation, and deployment-status reads remain unavailable until
+  the user sets a new password.
+- Administrator account-create and password-reset responses may contain the
+  one-time temporary password, but never a password hash or other credential
+  material.
+- Repository analysis that cannot identify Dockerfile, Node/package, or static
+  HTML behavior stops before Coolify creation and tells the user which simple
+  repository file is required.
+
 ## Purpose and principles
 
 This specification defines the MVP interface for a private, single-tenant Coolify portal. It covers the five approved routes and gives the code-writer an implementation contract.
@@ -353,4 +365,4 @@ Do not place muted text on semantic tinted backgrounds without a separate contra
 
 - [Coolify Portal MVP design](../designs/2026-09-24-coolify-portal-mvp-design.md)
 - [ADR-0001: Coolify Portal MVP Architecture](../adr/0001-coolify-portal-mvp-architecture.md)
-- [Prototype handoff](../../memory/2026-09-22-coolify-portal-prototype-handoff.md)
+- [Prototype handoff](../../memory/archive/2026-09-22-coolify-portal-prototype-handoff.md)

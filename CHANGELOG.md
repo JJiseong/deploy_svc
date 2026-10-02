@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **[2026-10-02]**: security: enforce first-login password changes across pages, server actions, repository APIs, and deployment status endpoints; never return password hashes in temporary-password responses.
+- **[2026-10-02]**: fix: stop deployments when repository analysis is inconclusive and explain the Dockerfile, package.json, or index.html change required to continue; update staging preflight for the post-login GitHub callback.
 - **[2026-10-01]**: security: add a global `X-Robots-Tag: noindex, nofollow` response policy so the deployment portal itself is not indexed alongside its public services.
 - **[2026-10-01]**: ops: add a persistent `deploy-svc-ec2` SSH operator alias and lock down key permissions; harden existing-service public migration to clear orphan legacy credentials safely and report missing public domains without destructive cleanup.
 - **[2026-10-01]**: feat: inspect repository files during automatic analysis to detect Dockerfile `EXPOSE` ports and Node server ports before deployment, while retaining a safe default for compatible GitHub proxies that omit file contents.

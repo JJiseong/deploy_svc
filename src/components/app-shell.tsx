@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { AuthorizedUser } from "../lib/auth/authorization";
 import { SignOutButton } from "./sign-out-button";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
 
 export function AppShell({ user, children }: { user: AuthorizedUser; children: React.ReactNode }) {
+  if (user.mustChangePassword) redirect("/account/change-password");
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">본문으로 건너뛰기</a>

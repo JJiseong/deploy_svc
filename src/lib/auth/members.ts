@@ -14,7 +14,7 @@ export async function createMember(actorId: string, input: unknown) {
   await requireAdminById(actorId);
   const data = memberInputSchema.parse(input);
   const password = temporaryPassword();
-  const member = await prisma.user.create({ data: { email: data.email, role: data.role, status: "ACTIVE", passwordHash: await hashPassword(password), mustChangePassword: true } });
+  const member = await prisma.user.create({ data: { email: data.email, role: data.role, status: "ACTIVE", passwordHash: await hashPassword(password), mustChangePassword: true }, select: { id: true, email: true, role: true, status: true, createdAt: true } });
   await writeAuditEvent({ actorId, action: "MEMBER_CREATE", outcome: "SUCCESS", targetType: "User", targetId: member.id, metadata: { email: member.email, role: member.role } });
   return { member, temporaryPassword: password };
 }
@@ -22,7 +22,7 @@ export async function createMember(actorId: string, input: unknown) {
 export async function resetMemberPassword(actorId: string, memberId: string) {
   await requireAdminById(actorId);
   const password = temporaryPassword();
-  const member = await prisma.user.update({ where: { id: memberId }, data: { passwordHash: await hashPassword(password), mustChangePassword: true } });
+  const member = await prisma.user.update({ where: { id: memberId }, data: { passwordHash: await hashPassword(password), mustChangePassword: true }, select: { id: true, email: true, role: true, status: true, createdAt: true } });
   await writeAuditEvent({ actorId, action: "MEMBER_PASSWORD_RESET", outcome: "SUCCESS", targetType: "User", targetId: member.id, metadata: { email: member.email } });
   return { member, temporaryPassword: password };
 }

@@ -102,7 +102,7 @@ The portal targets WCAG 2.1 AA. Implementation must support keyboard operation, 
 
 ## References
 
-- `memory/2026-09-22-coolify-portal-prototype-handoff.md`
+- `memory/archive/2026-09-22-coolify-portal-prototype-handoff.md`
 - `docs/designs/2026-09-24-coolify-portal-mvp-design.md`
 - [Coolify API overview](https://coolify.io/docs/api/overview)
 - [Coolify API permissions](https://coolify.io/docs/api/permissions)
