@@ -21,7 +21,7 @@ export type GitHubBranchOption = {
   sha: string;
   protected: boolean;
 };
-export type RepositoryAnalysis = { buildPack: "AUTO" | "NIXPACKS" | "DOCKERFILE" | "STATIC"; port: number; explanation: string };
+export type RepositoryAnalysis = { buildPack: "AUTO" | "NIXPACKS" | "DOCKERFILE" | "STATIC"; port: number; explanation: string; startCommand?: string };
 
 type GitHubRepositoryResponse = {
   id?: number | string;
@@ -192,9 +192,11 @@ export async function analyzeGitHubRepository(accessToken: string, owner: string
     if (packageSource) {
       try { packageJson = JSON.parse(packageSource) as typeof packageJson; } catch { /* use safe defaults */ }
     }
-    const startCommand = typeof packageJson.scripts?.start === "string" ? packageJson.scripts.start : "";
+    const declaredStartCommand = typeof packageJson.scripts?.start === "string" ? packageJson.scripts.start.trim() : "";
+    const startCommand = declaredStartCommand;
     let port = detectPort(startCommand);
     let detectedFrom: string | null = port ? "실행 명령" : null;
+    let inferredStartCommand = declaredStartCommand || null;
     if (!port) {
       for (const candidate of scriptFileCandidates(packageJson)) {
         const actualName = byName.get(candidate.toLowerCase());
@@ -204,8 +206,16 @@ export async function analyzeGitHubRepository(accessToken: string, owner: string
         if (port) { detectedFrom = actualName; break; }
       }
     }
+    if (!inferredStartCommand) {
+      for (const candidate of scriptFileCandidates(packageJson)) {
+        const actualName = byName.get(candidate.toLowerCase());
+        if (!actualName || !/\.(?:c?m?js)$/i.test(actualName)) continue;
+        inferredStartCommand = `node ${actualName}`;
+        break;
+      }
+    }
     port ??= 3000;
-    return { buildPack: "NIXPACKS", port, explanation: `Node 웹앱으로 인식해 필요한 실행 환경을 자동으로 준비합니다.${detectedFrom ? ` ${detectedFrom}에서 포트 ${port}를 감지했습니다.` : " 기본 웹 포트 3000을 사용합니다."}` };
+    return { buildPack: "NIXPACKS", port, ...(inferredStartCommand ? { startCommand: inferredStartCommand } : {}), explanation: `Node 웹앱으로 인식해 필요한 실행 환경을 자동으로 준비합니다.${detectedFrom ? ` ${detectedFrom}에서 포트 ${port}를 감지했습니다.` : " 기본 웹 포트 3000을 사용합니다."}` };
   }
   if (byName.has("index.html")) return { buildPack: "STATIC", port: 80, explanation: "정적 HTML 사이트로 인식해 공개 웹사이트로 배포합니다." };
   return { buildPack: "AUTO", port: 3000, explanation: "일반 웹앱으로 인식했습니다. 배포가 실패하면 저장소에 Dockerfile 또는 실행 안내를 추가해 주세요." };

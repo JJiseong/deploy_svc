@@ -106,6 +106,7 @@ export async function createDeployment(user: AuthorizedUser, input: unknown, cli
         branch: data.branch,
         port: analysis.port,
         buildPack: analysis.buildPack === "DOCKERFILE" ? "dockerfile" : analysis.buildPack === "STATIC" ? "static" : "nixpacks",
+        startCommand: analysis.startCommand,
         tag,
       });
     } catch (createError) {

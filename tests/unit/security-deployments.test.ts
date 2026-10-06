@@ -81,6 +81,14 @@ describe("Coolify contracts", () => {
     expect(body.git_repository).toBe("https://github.com/JJiseong/demo");
   });
 
+  test("passes an inferred Node start command to Coolify", async () => {
+    let request: Request | undefined;
+    const client = new CoolifyClient(env, async (input, init) => { request = new Request(input, init); return new Response(JSON.stringify({ uuid: "app-node", fqdn: "https://node.example.com" }), { status: 201, headers: { "content-type": "application/json" } }); });
+    await client.createApplication({ name: "node-demo", repository: "JJiseong/node-demo", branch: "main", port: 3002, buildPack: "nixpacks", startCommand: "node server.js", tag: "tag-node" });
+    const body = JSON.parse(await request!.text()) as Record<string, unknown>;
+    expect(body.start_command).toBe("node server.js");
+  });
+
   test("uses a lower resource profile for static applications", async () => {
     let request: Request | undefined;
     const client = new CoolifyClient(env, async (input, init) => {
