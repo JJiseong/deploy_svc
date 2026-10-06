@@ -56,6 +56,8 @@ export type CreateApplicationInput = {
   branch: string;
   port: number;
   buildPack: "nixpacks" | "dockerfile" | "static";
+  /** Optional command inferred from a repository when Coolify cannot infer one safely. */
+  startCommand?: string;
   tag: string;
   /** Deprecated input retained only for source compatibility; never sent. */
   basicUsername?: string;
@@ -143,6 +145,7 @@ export class CoolifyClient {
       build_pack: input.buildPack,
       ports_exposes: String(input.port),
       name: input.name,
+      ...(input.startCommand?.trim() ? { start_command: input.startCommand.trim() } : {}),
       limits_cpus: limits.cpus,
       limits_memory: limits.memory,
       is_auto_deploy_enabled: true,

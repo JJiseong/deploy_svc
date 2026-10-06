@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **[2026-10-06]**: fix: infer a safe Node start command for repositories without `scripts.start` and pass it to Coolify so server-only apps do not restart with an empty shell command.
 - **[2026-10-02]**: perf: apply a low-resource Coolify profile to static sites while keeping Node and Dockerfile deployments isolated with the standard runtime profile.
 - **[2026-10-02]**: docs: replace the template README with a deployment-portal guide covering email login, GitHub connection, repository detection, public HTTPS services, administration, operations, troubleshooting, and local validation.
 - **[2026-10-02]**: security: enforce first-login password changes across pages, server actions, repository APIs, and deployment status endpoints; never return password hashes in temporary-password responses.

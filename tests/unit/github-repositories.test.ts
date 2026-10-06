@@ -82,6 +82,18 @@ describe("GitHub repository discovery", () => {
     expect(result.explanation).toContain("3001");
   });
 
+  test("infers a start command when package.json has no start script", async () => {
+    const result = await analyzeGitHubRepository("oauth-token", "JJiseong", "business-dashboard", "main", async (input) => {
+      const url = String(input);
+      if (url.includes("/contents?ref=main")) return response([{ name: "package.json", type: "file" }, { name: "server.js", type: "file" }]);
+      if (url.includes("/contents/package.json?ref=main")) return response({ type: "file", encoding: "base64", content: encoded(JSON.stringify({ dependencies: { express: "^5.0.0" } })) });
+      if (url.includes("/contents/server.js?ref=main")) return response({ type: "file", encoding: "base64", content: encoded("app.listen(3002);") });
+      throw new Error(`unexpected GitHub path: ${url}`);
+    });
+
+    expect(result).toMatchObject({ buildPack: "NIXPACKS", port: 3002, startCommand: "node server.js" });
+  });
+
   test("uses Dockerfile EXPOSE as the container port", async () => {
     const result = await analyzeGitHubRepository("oauth-token", "JJiseong", "docker-app", "main", async (input) => {
       const url = String(input);
